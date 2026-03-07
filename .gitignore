@@ -1,0 +1,6 @@
+node_modules
+dist
+.n8n-node-cli
+.n8n
+.DS_Store
+*.log

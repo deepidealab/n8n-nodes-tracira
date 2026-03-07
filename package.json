@@ -1,0 +1,62 @@
+{
+  "name": "n8n-nodes-tracira",
+  "version": "0.1.0",
+  "description": "Official n8n community node for Tracira AI output monitoring and approval workflows.",
+  "license": "MIT",
+  "homepage": "https://github.com/deepidealab/n8n-nodes-tracira",
+  "keywords": [
+    "n8n-community-node-package",
+    "n8n",
+    "tracira",
+    "ai",
+    "monitoring"
+  ],
+  "author": {
+    "name": "DeepIdea Lab",
+    "email": "support@deepidealab.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deepidealab/n8n-nodes-tracira.git"
+  },
+  "bugs": {
+    "url": "https://github.com/deepidealab/n8n-nodes-tracira/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "n8n-node build",
+    "build:watch": "tsc --watch",
+    "dev": "n8n-node dev",
+    "lint": "n8n-node lint",
+    "lint:fix": "n8n-node lint --fix",
+    "scan": "npx @n8n/scan-community-package n8n-nodes-tracira",
+    "verify": "npm run lint && npm run build",
+    "prepublishOnly": "n8n-node prerelease"
+  },
+  "files": [
+    "dist"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "strict": true,
+    "credentials": [
+      "dist/credentials/TraciraApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/Tracira/Tracira.node.js"
+    ]
+  },
+  "devDependencies": {
+    "@n8n/node-cli": "*",
+    "eslint": "9.32.0",
+    "prettier": "3.6.2",
+    "release-it": "^19.0.4",
+    "typescript": "5.9.2"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  }
+}

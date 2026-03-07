@@ -1,0 +1,44 @@
+name: Publish
+
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify package
+        run: npm run verify
+
+      - name: Publish to npm with provenance
+        run: npm publish --provenance --access public
+
+      - name: Wait for npm registry propagation
+        run: sleep 30
+
+      - name: Run package scan
+        run: |
+          for attempt in 1 2 3 4 5; do
+            npm run scan && exit 0
+            sleep 20
+          done
+          exit 1

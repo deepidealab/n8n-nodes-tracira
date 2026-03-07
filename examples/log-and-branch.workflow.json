@@ -1,0 +1,116 @@
+{
+  "name": "Tracira Log And Branch",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        260,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "execution",
+        "operation": "log",
+        "flowName": {
+          "mode": "name",
+          "value": "support-reply-flow"
+        },
+        "output": "={{ $json.output ?? \"Thanks for reaching out. We have escalated your request to the team.\" }}",
+        "input": "={{ $json.input ?? \"Draft a customer support reply for ticket #1234\" }}",
+        "checkName": {
+          "mode": "name",
+          "value": "support-reply-check"
+        },
+        "modelName": {
+          "mode": "name",
+          "value": "gpt-5-mini"
+        },
+        "options": {
+          "sessionId": "ticket-1234",
+          "subjectId": "1234"
+        }
+      },
+      "id": "tracira-log",
+      "name": "Tracira",
+      "type": "n8n-nodes-tracira.tracira",
+      "typeVersion": 1,
+      "position": [
+        520,
+        300
+      ],
+      "credentials": {
+        "traciraApi": {
+          "id": "replace-me",
+          "name": "Tracira API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "status-is-success",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "success",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "if-success",
+      "name": "Is Success?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        780,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Tracira",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tracira": {
+      "main": [
+        [
+          {
+            "node": "Is Success?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "00000000-0000-0000-0000-000000000001",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "pinData": {}
+}
