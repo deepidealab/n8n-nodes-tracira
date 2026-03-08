@@ -84,6 +84,10 @@ Maintainer release instructions are documented in [PUBLISHING.md](./PUBLISHING.m
 
 ## Version history
 
+### 0.1.7
+
+Remove the invalid `Developer Tools` node category so Tracira remains visible in the editor on self-hosted n8n.
+
 ### 0.1.6
 
 Replace newer declarative node features with a plain execute-style implementation for broader self-hosted n8n compatibility.
