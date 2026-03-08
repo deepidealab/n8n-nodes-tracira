@@ -84,6 +84,10 @@ Maintainer release instructions are documented in [PUBLISHING.md](./PUBLISHING.m
 
 ## Version history
 
+### 0.1.2
+
+Allow GitHub Actions trusted publishing while continuing to block accidental local publishes.
+
 ### 0.1.1
 
 First GitHub Actions release with npm provenance and trusted publishing.

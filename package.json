@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-tracira",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Official n8n community node for Tracira AI output monitoring and approval workflows.",
   "license": "MIT",
   "homepage": "https://github.com/deepidealab/n8n-nodes-tracira",
@@ -34,7 +34,7 @@
     "lint:fix": "n8n-node lint --fix",
     "scan": "npx @n8n/scan-community-package n8n-nodes-tracira",
     "verify": "npm run lint && npm run build",
-    "prepublishOnly": "n8n-node prerelease"
+    "prepublishOnly": "node -e \"if (!process.env.GITHUB_ACTIONS) { console.error('Use GitHub Actions to publish this package, or pass --ignore-scripts for the one-time bootstrap publish.'); process.exit(1); }\""
   },
   "files": [
     "dist"
