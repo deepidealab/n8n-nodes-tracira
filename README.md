@@ -84,6 +84,10 @@ Maintainer release instructions are documented in [PUBLISHING.md](./PUBLISHING.m
 
 ## Version history
 
+### 0.1.4
+
+Use a current npm CLI in the publish workflow to satisfy npm trusted publishing requirements.
+
 ### 0.1.3
 
 Force GitHub Actions to publish via npm trusted publishing instead of any inherited token environment.
