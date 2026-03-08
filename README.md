@@ -1,4 +1,4 @@
-# n8n-nodes-tracira
+# @deepidealab/n8n-nodes-tracira
 
 This is an n8n community node for Tracira.
 
@@ -9,6 +9,14 @@ Tracira monitors AI outputs from your automations, evaluates them against rules,
 ## Installation
 
 Follow the [n8n community node installation guide](https://docs.n8n.io/integrations/community-nodes/installation/).
+
+Install package name:
+
+```text
+@deepidealab/n8n-nodes-tracira
+```
+
+If you already installed the legacy unscoped package `n8n-nodes-tracira`, uninstall it and install the scoped package instead.
 
 For local development:
 
@@ -83,6 +91,10 @@ Maintainer release instructions are documented in [PUBLISHING.md](./PUBLISHING.m
 - [Tracira API schema](https://www.tracira.com/openapi.json)
 
 ## Version history
+
+### 0.2.0
+
+Move the package to the `@deepidealab` npm scope so the node is published under the business organization instead of a personal npm account.
 
 ### 0.1.8
 

@@ -37,7 +37,7 @@
       },
       "id": "tracira-log",
       "name": "Tracira",
-      "type": "n8n-nodes-tracira.tracira",
+      "type": "@deepidealab/n8n-nodes-tracira.tracira",
       "typeVersion": 1,
       "position": [
         520,
