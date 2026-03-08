@@ -84,6 +84,10 @@ Maintainer release instructions are documented in [PUBLISHING.md](./PUBLISHING.m
 
 ## Version history
 
+### 0.1.8
+
+Add codex categories and search aliases to improve Tracira discoverability in the editor node picker.
+
 ### 0.1.7
 
 Remove the invalid `Developer Tools` node category so Tracira remains visible in the editor on self-hosted n8n.

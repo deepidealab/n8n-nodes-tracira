@@ -42,6 +42,22 @@ export class Tracira implements INodeType {
 		version: 1,
 		subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
 		description: 'Log and inspect Tracira AI execution data',
+		codex: {
+			categories: ['AI'],
+			resources: {
+				credentialDocumentation: [
+					{
+						url: 'https://github.com/deepidealab/n8n-nodes-tracira?tab=readme-ov-file#credentials',
+					},
+				],
+				primaryDocumentation: [
+					{
+						url: 'https://github.com/deepidealab/n8n-nodes-tracira?tab=readme-ov-file',
+					},
+				],
+			},
+			alias: ['Tracira AI', 'Tracera', 'AI monitoring', 'AI evaluation', 'LLM monitoring'],
+		},
 		defaults: {
 			name: 'Tracira',
 		},
