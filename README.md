@@ -84,6 +84,10 @@ Maintainer release instructions are documented in [PUBLISHING.md](./PUBLISHING.m
 
 ## Version history
 
+### 0.1.3
+
+Force GitHub Actions to publish via npm trusted publishing instead of any inherited token environment.
+
 ### 0.1.2
 
 Allow GitHub Actions trusted publishing while continuing to block accidental local publishes.
