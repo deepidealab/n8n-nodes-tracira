@@ -84,6 +84,10 @@ Maintainer release instructions are documented in [PUBLISHING.md](./PUBLISHING.m
 
 ## Version history
 
+### 0.1.6
+
+Replace newer declarative node features with a plain execute-style implementation for broader self-hosted n8n compatibility.
+
 ### 0.1.5
 
 Reduce node-description metadata to older-safe fields for self-hosted n8n compatibility.
