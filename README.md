@@ -84,6 +84,10 @@ Maintainer release instructions are documented in [PUBLISHING.md](./PUBLISHING.m
 
 ## Version history
 
+### 0.1.1
+
+First GitHub Actions release with npm provenance and trusted publishing.
+
 ### 0.1.0
 
 Initial Tracira node setup with execution logging and read operations.
