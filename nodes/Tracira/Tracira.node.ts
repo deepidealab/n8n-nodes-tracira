@@ -1,4 +1,5 @@
-import { NodeConnectionTypes, type INodeType, type INodeTypeDescription } from 'n8n-workflow';
+/* eslint-disable @n8n/community-nodes/node-usable-as-tool */
+import type { INodeType, INodeTypeDescription } from 'n8n-workflow';
 import { executionDescription } from './resources/execution';
 import { getChecks } from './listSearch/getChecks';
 import { getFlows } from './listSearch/getFlows';
@@ -8,17 +9,16 @@ export class Tracira implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Tracira',
 		name: 'tracira',
-		icon: { light: 'file:tracira.svg', dark: 'file:tracira.dark.svg' },
+		icon: 'file:tracira.svg',
 		group: ['transform'],
 		version: 1,
 		subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
 		description: 'Log and inspect Tracira AI execution data',
-		usableAsTool: true,
 		defaults: {
 			name: 'Tracira',
 		},
-		inputs: [NodeConnectionTypes.Main],
-		outputs: [NodeConnectionTypes.Main],
+		inputs: ['main'],
+		outputs: ['main'],
 		credentials: [
 			{
 				name: 'traciraApi',

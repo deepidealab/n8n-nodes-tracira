@@ -84,6 +84,10 @@ Maintainer release instructions are documented in [PUBLISHING.md](./PUBLISHING.m
 
 ## Version history
 
+### 0.1.5
+
+Reduce node-description metadata to older-safe fields for self-hosted n8n compatibility.
+
 ### 0.1.4
 
 Use a current npm CLI in the publish workflow to satisfy npm trusted publishing requirements.
