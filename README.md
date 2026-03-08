@@ -32,6 +32,11 @@ The node currently supports the `Execution` resource with these operations:
 - `Log`: Send an AI execution to Tracira for evaluation.
 - `Get`: Fetch a single execution by ID.
 - `Get Many`: List executions with filters such as status, flow, check, and date range.
+- `Set Decision`: Approve or reject a flagged execution.
+
+The node also supports the `API` resource with:
+
+- `Call`: Make an arbitrary authenticated request to the Tracira API.
 
 ## Credentials
 
@@ -91,6 +96,10 @@ Maintainer release instructions are documented in [PUBLISHING.md](./PUBLISHING.m
 - [Tracira API schema](https://www.tracira.com/openapi.json)
 
 ## Version history
+
+### 0.2.1
+
+Bring the n8n node surface back in line with the Make app by adding `Set Decision` and `Make API Call`, and make the decision endpoint token-authenticated for automation clients.
 
 ### 0.2.0
 

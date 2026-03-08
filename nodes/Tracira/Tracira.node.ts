@@ -2,15 +2,25 @@
 import type {
 	IDataObject,
 	IExecuteFunctions,
+	IHttpRequestMethods,
 	IHttpRequestOptions,
+	IN8nHttpFullResponse,
 	INodeExecutionData,
 	INodeProperties,
 	INodeType,
 	INodeTypeDescription,
 } from 'n8n-workflow';
-import { NodeOperationError } from 'n8n-workflow';
+import { ApplicationError, NodeOperationError } from 'n8n-workflow';
 
 const baseUrl = 'https://www.tracira.com/api';
+
+const executionDisplay = {
+	resource: ['execution'],
+};
+
+const apiDisplay = {
+	resource: ['api'],
+};
 
 const logDisplay = {
 	resource: ['execution'],
@@ -27,10 +37,66 @@ const getAllDisplay = {
 	operation: ['getAll'],
 };
 
+const setDecisionDisplay = {
+	resource: ['execution'],
+	operation: ['setDecision'],
+};
+
+const apiCallDisplay = {
+	resource: ['api'],
+	operation: ['call'],
+};
+
 function stripEmpty(data: IDataObject): IDataObject {
 	return Object.fromEntries(
 		Object.entries(data).filter(([, value]) => value !== '' && value !== undefined && value !== null),
 	);
+}
+
+function normalizeApiPath(path: string): string {
+	if (!path.trim()) return '/';
+	if (path.startsWith('http://') || path.startsWith('https://')) {
+		throw new ApplicationError(
+			'Use a path relative to https://www.tracira.com/api, for example /executions',
+		);
+	}
+	return path.startsWith('/') ? path : `/${path}`;
+}
+
+function parseJsonObject(text: string, fieldName: string): IDataObject {
+	if (!text.trim()) return {};
+
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(text);
+	} catch {
+		throw new ApplicationError(`${fieldName} must be valid JSON`);
+	}
+
+	if (parsed === null || Array.isArray(parsed) || typeof parsed !== 'object') {
+		throw new ApplicationError(`${fieldName} must be a JSON object`);
+	}
+
+	return parsed as IDataObject;
+}
+
+function parseOptionalJsonBody(text: string): IDataObject | string | undefined {
+	const trimmed = text.trim();
+	if (!trimmed) return undefined;
+
+	try {
+		return JSON.parse(trimmed) as IDataObject;
+	} catch {
+		return text;
+	}
+}
+
+function mapFullResponse(response: IN8nHttpFullResponse): IDataObject {
+	return {
+		statusCode: response.statusCode,
+		headers: response.headers as IDataObject,
+		body: response.body as IDataObject | string,
+	};
 }
 
 export class Tracira implements INodeType {
@@ -80,6 +146,10 @@ export class Tracira implements INodeType {
 						name: 'Execution',
 						value: 'execution',
 					},
+					{
+						name: 'API',
+						value: 'api',
+					},
 				],
 				default: 'execution',
 			},
@@ -89,9 +159,7 @@ export class Tracira implements INodeType {
 				type: 'options',
 				noDataExpression: true,
 				displayOptions: {
-					show: {
-						resource: ['execution'],
-					},
+					show: executionDisplay,
 				},
 				options: [
 					{
@@ -112,8 +180,32 @@ export class Tracira implements INodeType {
 						action: 'Get many an execution',
 						description: 'List executions from Tracira',
 					},
+					{
+						name: 'Set Decision',
+						value: 'setDecision',
+						action: 'Set a decision for an execution',
+						description: 'Approve or reject a flagged execution',
+					},
 				],
 				default: 'log',
+			},
+			{
+				displayName: 'Operation',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				displayOptions: {
+					show: apiDisplay,
+				},
+				options: [
+					{
+						name: 'Call',
+						value: 'call',
+						action: 'Make an API call',
+						description: 'Perform an arbitrary authenticated Tracira API request',
+					},
+				],
+				default: 'call',
 			},
 			{
 				displayName: 'Execution ID',
@@ -125,6 +217,38 @@ export class Tracira implements INodeType {
 					show: getDisplay,
 				},
 				description: 'The execution ID to fetch',
+			},
+			{
+				displayName: 'Execution ID',
+				name: 'decisionExecutionId',
+				type: 'string',
+				required: true,
+				default: '',
+				displayOptions: {
+					show: setDecisionDisplay,
+				},
+				description: 'The execution ID to approve or reject',
+			},
+			{
+				displayName: 'Decision',
+				name: 'decision',
+				type: 'options',
+				required: true,
+				default: 'approved',
+				displayOptions: {
+					show: setDecisionDisplay,
+				},
+				options: [
+					{
+						name: 'Approved',
+						value: 'approved',
+					},
+					{
+						name: 'Rejected',
+						value: 'rejected',
+					},
+				],
+				description: 'The human review decision to record',
 			},
 			{
 				displayName: 'Flow',
@@ -224,12 +348,12 @@ export class Tracira implements INodeType {
 						type: 'string',
 						default: '',
 					},
-						{
-							displayName: 'Latency',
-							name: 'latencyMs',
-							type: 'number',
-							default: 0,
-						},
+					{
+						displayName: 'Latency',
+						name: 'latencyMs',
+						type: 'number',
+						default: 0,
+					},
 					{
 						displayName: 'Metadata JSON',
 						name: 'metadataJson',
@@ -377,6 +501,74 @@ export class Tracira implements INodeType {
 					},
 				],
 			},
+			{
+				displayName: 'Path',
+				name: 'apiPath',
+				type: 'string',
+				required: true,
+				default: '/executions',
+				displayOptions: {
+					show: apiCallDisplay,
+				},
+				description: 'Path relative to https://www.tracira.com/api',
+			},
+			{
+				displayName: 'Method',
+				name: 'apiMethod',
+				type: 'options',
+				required: true,
+				default: 'GET',
+				displayOptions: {
+					show: apiCallDisplay,
+				},
+				options: [
+					{ name: 'DELETE', value: 'DELETE' },
+					{ name: 'GET', value: 'GET' },
+					{ name: 'PATCH', value: 'PATCH' },
+					{ name: 'POST', value: 'POST' },
+					{ name: 'PUT', value: 'PUT' },
+				],
+				description: 'HTTP method to use',
+			},
+			{
+				displayName: 'Headers JSON',
+				name: 'apiHeadersJson',
+				type: 'string',
+				typeOptions: {
+					rows: 4,
+				},
+				default: '{}',
+				displayOptions: {
+					show: apiCallDisplay,
+				},
+				description: 'Optional JSON object of request headers. Authorization is added automatically.',
+			},
+			{
+				displayName: 'Query String JSON',
+				name: 'apiQueryJson',
+				type: 'string',
+				typeOptions: {
+					rows: 4,
+				},
+				default: '{}',
+				displayOptions: {
+					show: apiCallDisplay,
+				},
+				description: 'Optional JSON object of query-string parameters',
+			},
+			{
+				displayName: 'Body',
+				name: 'apiBody',
+				type: 'string',
+				typeOptions: {
+					rows: 6,
+				},
+				default: '',
+				displayOptions: {
+					show: apiCallDisplay,
+				},
+				description: 'Optional request body. JSON text is parsed automatically; other text is sent as-is.',
+			},
 		] as INodeProperties[],
 	};
 
@@ -386,10 +578,11 @@ export class Tracira implements INodeType {
 
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
 			try {
+				const resource = this.getNodeParameter('resource', itemIndex) as string;
 				const operation = this.getNodeParameter('operation', itemIndex) as string;
 				let requestOptions: IHttpRequestOptions;
 
-				if (operation === 'log') {
+				if (resource === 'execution' && operation === 'log') {
 					const options = this.getNodeParameter('options', itemIndex, {}) as IDataObject;
 					let metadata: IDataObject | undefined;
 
@@ -423,14 +616,14 @@ export class Tracira implements INodeType {
 							subjectId: options.subjectId as string | undefined,
 						}),
 					};
-				} else if (operation === 'get') {
+				} else if (resource === 'execution' && operation === 'get') {
 					const executionId = this.getNodeParameter('executionId', itemIndex) as string;
 
 					requestOptions = {
 						method: 'GET',
 						url: `${baseUrl}/executions/${encodeURIComponent(executionId)}`,
 					};
-				} else {
+				} else if (resource === 'execution' && operation === 'getAll') {
 					const filters = this.getNodeParameter('filters', itemIndex, {}) as IDataObject;
 
 					requestOptions = {
@@ -450,6 +643,42 @@ export class Tracira implements INodeType {
 							subjectId: filters.subjectId as string | undefined,
 						}),
 					};
+				} else if (resource === 'execution' && operation === 'setDecision') {
+					const executionId = this.getNodeParameter('decisionExecutionId', itemIndex) as string;
+					const decision = this.getNodeParameter('decision', itemIndex) as string;
+
+					requestOptions = {
+						method: 'PATCH',
+						url: `${baseUrl}/executions/${encodeURIComponent(executionId)}/decision`,
+						body: {
+							decision,
+						},
+					};
+				} else if (resource === 'api' && operation === 'call') {
+					const headers = parseJsonObject(
+						this.getNodeParameter('apiHeadersJson', itemIndex, '{}') as string,
+						'Headers JSON',
+					);
+					const qs = parseJsonObject(
+						this.getNodeParameter('apiQueryJson', itemIndex, '{}') as string,
+						'Query String JSON',
+					);
+					const body = parseOptionalJsonBody(
+						this.getNodeParameter('apiBody', itemIndex, '') as string,
+					);
+
+					requestOptions = {
+						method: this.getNodeParameter('apiMethod', itemIndex) as IHttpRequestMethods,
+						url: `${baseUrl}${normalizeApiPath(this.getNodeParameter('apiPath', itemIndex) as string)}`,
+						headers,
+						qs,
+						body,
+						returnFullResponse: true,
+					};
+				} else {
+					throw new NodeOperationError(this.getNode(), `Unsupported Tracira operation: ${resource}/${operation}`, {
+						itemIndex,
+					});
 				}
 
 				const response = await this.helpers.httpRequestWithAuthentication.call(
@@ -458,13 +687,18 @@ export class Tracira implements INodeType {
 					requestOptions,
 				);
 
-				if (operation === 'getAll' && Array.isArray(response?.executions)) {
+				if (resource === 'execution' && operation === 'getAll' && Array.isArray(response?.executions)) {
 					for (const execution of response.executions) {
 						returnData.push({
 							json: execution as IDataObject,
 							pairedItem: itemIndex,
 						});
 					}
+				} else if (resource === 'api' && operation === 'call' && response?.statusCode) {
+					returnData.push({
+						json: mapFullResponse(response as IN8nHttpFullResponse),
+						pairedItem: itemIndex,
+					});
 				} else {
 					returnData.push({
 						json: response as IDataObject,
