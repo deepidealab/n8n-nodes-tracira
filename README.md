@@ -100,6 +100,15 @@ This package is structured to align with n8n's verification guidance:
 
 Maintainer release instructions are documented in [PUBLISHING.md](./PUBLISHING.md).
 
+## Releasing a new version
+
+1. Make changes, bump `package.json` version, update `CHANGELOG.md`.
+2. Commit and push to `main`.
+3. Run `gh release create vX.Y.Z --title "vX.Y.Z" --notes "..."` — this triggers the GitHub Actions publish workflow automatically.
+4. The workflow builds, publishes to npm with provenance, and runs the n8n package scan.
+
+Do **not** publish manually from a local machine — provenance requires the GitHub Actions trusted publisher.
+
 ## Resources
 
 - [n8n community nodes documentation](https://docs.n8n.io/integrations/#community-nodes)
