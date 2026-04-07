@@ -620,7 +620,7 @@ export class Tracira implements INodeType {
 
 					requestOptions = {
 						method: 'POST',
-						url: `${baseUrl}/webhook`,
+						url: `${baseUrl}/logs`,
 						body: stripEmpty({
 							project: this.getNodeParameter('projectName', itemIndex) as string,
 							output: this.getNodeParameter('output', itemIndex) as string,
