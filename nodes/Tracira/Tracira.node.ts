@@ -325,6 +325,20 @@ export class Tracira implements INodeType {
 						default: '',
 					},
 					{
+						displayName: 'Callback Events',
+						name: 'callbackEvents',
+						type: 'options',
+						default: 'all',
+						options: [
+							{ name: 'All Events (Default)', value: 'all' },
+							{ name: 'Flagged & Errors Only', value: 'flagged_error' },
+							{ name: 'Flagged, Errors & Decisions', value: 'flagged_error_decisions' },
+							{ name: 'Human Decisions Only', value: 'decisions' },
+							{ name: 'Pass Only', value: 'pass' },
+						],
+						description: 'Controls which events trigger the Callback URL. Only used when Callback URL is set.',
+					},
+					{
 						displayName: 'Callback URL',
 						name: 'callbackUrl',
 						type: 'string',
@@ -343,16 +357,16 @@ export class Tracira implements INodeType {
 						default: 0,
 					},
 					{
-						displayName: 'Log ID',
-						name: 'id',
-						type: 'string',
-						default: '',
-					},
-					{
 						displayName: 'Latency',
 						name: 'latencyMs',
 						type: 'number',
 						default: 0,
+					},
+					{
+						displayName: 'Log ID',
+						name: 'id',
+						type: 'string',
+						default: '',
 					},
 					{
 						displayName: 'Metadata JSON',
@@ -363,20 +377,6 @@ export class Tracira implements INodeType {
 						},
 						default: '',
 						description: 'Optional JSON object to store as log metadata',
-					},
-					{
-						displayName: 'Callback Events',
-						name: 'callbackEvents',
-						type: 'options',
-						default: 'all',
-						options: [
-							{ name: 'All Events (default)', value: 'all' },
-							{ name: 'Flagged & Errors Only', value: 'flagged_error' },
-							{ name: 'Human Decisions Only', value: 'decisions' },
-							{ name: 'Flagged, Errors & Decisions', value: 'flagged_error_decisions' },
-							{ name: 'Pass Only', value: 'pass' },
-						],
-						description: 'Controls which events trigger the Callback URL. Only used when Callback URL is set.',
 					},
 					{
 						displayName: 'Session ID',
@@ -409,10 +409,10 @@ export class Tracira implements INodeType {
 				},
 				options: [
 					{ name: 'All', value: '' },
-					{ name: 'Pending', value: 'pending' },
-					{ name: 'Pass', value: 'pass' },
-					{ name: 'Flagged', value: 'flagged' },
 					{ name: 'Error', value: 'error' },
+					{ name: 'Flagged', value: 'flagged' },
+					{ name: 'Pass', value: 'pass' },
+					{ name: 'Pending', value: 'pending' },
 				],
 				description: 'Filter logs by status',
 			},
