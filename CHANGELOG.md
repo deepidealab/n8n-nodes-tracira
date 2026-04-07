@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.4] - 2026-04-07
+
+### Added
+- `Timestamp` option on the Log operation — override the log date when replaying or reprocessing past executions (ISO 8601, optional).
+
+### Changed
+- Renamed "Latency" option label to "Latency (ms)" for clarity.
+
 ## [0.3.3] - 2026-04-07
 
 ### Changed

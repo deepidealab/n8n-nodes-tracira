@@ -357,7 +357,7 @@ export class Tracira implements INodeType {
 						default: 0,
 					},
 					{
-						displayName: 'Latency',
+						displayName: 'Latency (ms)',
 						name: 'latencyMs',
 						type: 'number',
 						default: 0,
@@ -396,6 +396,13 @@ export class Tracira implements INodeType {
 						type: 'boolean',
 						default: false,
 						description: 'Whether to wait for evaluation to complete before continuing. Off (default): n8n continues immediately, Tracira evaluates in the background. On: n8n waits for the full verdict so you can branch on status/verdict.',
+					},
+					{
+						displayName: 'Timestamp',
+						name: 'timestamp',
+						type: 'dateTime',
+						default: '',
+						description: 'Optional. Override the log timestamp — useful when replaying or reprocessing past executions. Leave blank to use the current time.',
 					},
 				],
 			},
@@ -638,6 +645,7 @@ export class Tracira implements INodeType {
 							sessionId: options.sessionId as string | undefined,
 							subjectId: options.subjectId as string | undefined,
 							sync: options.sync as boolean | undefined,
+							timestamp: options.timestamp as string | undefined,
 						}),
 					};
 				} else if (resource === 'log' && operation === 'get') {
