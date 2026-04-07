@@ -14,31 +14,31 @@ import { ApplicationError, NodeOperationError } from 'n8n-workflow';
 
 const baseUrl = 'https://www.tracira.com/api';
 
-const executionDisplay = {
-	resource: ['execution'],
+const logResourceDisplay = {
+	resource: ['log'],
 };
 
 const apiDisplay = {
 	resource: ['api'],
 };
 
-const logDisplay = {
-	resource: ['execution'],
+const logOperationDisplay = {
+	resource: ['log'],
 	operation: ['log'],
 };
 
 const getDisplay = {
-	resource: ['execution'],
+	resource: ['log'],
 	operation: ['get'],
 };
 
 const getAllDisplay = {
-	resource: ['execution'],
+	resource: ['log'],
 	operation: ['getAll'],
 };
 
 const setDecisionDisplay = {
-	resource: ['execution'],
+	resource: ['log'],
 	operation: ['setDecision'],
 };
 
@@ -57,7 +57,7 @@ function normalizeApiPath(path: string): string {
 	if (!path.trim()) return '/';
 	if (path.startsWith('http://') || path.startsWith('https://')) {
 		throw new ApplicationError(
-			'Use a path relative to https://www.tracira.com/api, for example /executions',
+			'Use a path relative to https://www.tracira.com/api, for example /logs',
 		);
 	}
 	return path.startsWith('/') ? path : `/${path}`;
@@ -107,7 +107,7 @@ export class Tracira implements INodeType {
 		group: ['transform'],
 		version: 1,
 		subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
-		description: 'Log and inspect Tracira AI execution data',
+		description: 'Log and inspect Tracira AI log data',
 		codex: {
 			categories: ['AI'],
 			resources: {
@@ -143,15 +143,15 @@ export class Tracira implements INodeType {
 				noDataExpression: true,
 				options: [
 					{
-						name: 'Execution',
-						value: 'execution',
+						name: 'Log',
+						value: 'log',
 					},
 					{
 						name: 'API',
 						value: 'api',
 					},
 				],
-				default: 'execution',
+				default: 'log',
 			},
 			{
 				displayName: 'Operation',
@@ -159,32 +159,32 @@ export class Tracira implements INodeType {
 				type: 'options',
 				noDataExpression: true,
 				displayOptions: {
-					show: executionDisplay,
+					show: logResourceDisplay,
 				},
 				options: [
 					{
 						name: 'Log',
 						value: 'log',
-						action: 'Log an execution',
-						description: 'Send an AI execution to Tracira for evaluation',
+						action: 'Log an AI output',
+						description: 'Send an AI output to Tracira for evaluation',
 					},
 					{
 						name: 'Get',
 						value: 'get',
-						action: 'Get an execution',
-						description: 'Fetch a single execution by ID',
+						action: 'Get a log',
+						description: 'Fetch a single log by ID',
 					},
 					{
 						name: 'Get Many',
 						value: 'getAll',
-						action: 'Get many an execution',
-						description: 'List executions from Tracira',
+						action: 'Get many logs',
+						description: 'List logs from Tracira',
 					},
 					{
 						name: 'Set Decision',
 						value: 'setDecision',
-						action: 'Set a decision for an execution',
-						description: 'Approve or reject a flagged execution',
+						action: 'Set a decision for a log',
+						description: 'Approve or reject a flagged log',
 					},
 				],
 				default: 'log',
@@ -208,26 +208,26 @@ export class Tracira implements INodeType {
 				default: 'call',
 			},
 			{
-				displayName: 'Execution ID',
-				name: 'executionId',
+				displayName: 'Log ID',
+				name: 'logId',
 				type: 'string',
 				required: true,
 				default: '',
 				displayOptions: {
 					show: getDisplay,
 				},
-				description: 'The execution ID to fetch',
+				description: 'The log ID to fetch',
 			},
 			{
-				displayName: 'Execution ID',
-				name: 'decisionExecutionId',
+				displayName: 'Log ID',
+				name: 'decisionLogId',
 				type: 'string',
 				required: true,
 				default: '',
 				displayOptions: {
 					show: setDecisionDisplay,
 				},
-				description: 'The execution ID to approve or reject',
+				description: 'The log ID to approve or reject',
 			},
 			{
 				displayName: 'Decision',
@@ -251,15 +251,15 @@ export class Tracira implements INodeType {
 				description: 'The human review decision to record',
 			},
 			{
-				displayName: 'Flow',
-				name: 'flowName',
+				displayName: 'Project',
+				name: 'projectName',
 				type: 'string',
 				required: true,
 				default: '',
 				displayOptions: {
-					show: logDisplay,
+					show: logOperationDisplay,
 				},
-				description: 'The Tracira flow name for this execution',
+				description: 'The Tracira project name for this log',
 			},
 			{
 				displayName: 'Output',
@@ -271,7 +271,7 @@ export class Tracira implements INodeType {
 				required: true,
 				default: '',
 				displayOptions: {
-					show: logDisplay,
+					show: logOperationDisplay,
 				},
 				description: 'The AI-generated output to evaluate in Tracira',
 			},
@@ -284,19 +284,19 @@ export class Tracira implements INodeType {
 				},
 				default: '',
 				displayOptions: {
-					show: logDisplay,
+					show: logOperationDisplay,
 				},
 				description: 'Optional prompt or input text that produced the output',
 			},
 			{
-				displayName: 'Check',
-				name: 'checkName',
+				displayName: 'Task',
+				name: 'taskName',
 				type: 'string',
 				default: '',
 				displayOptions: {
-					show: logDisplay,
+					show: logOperationDisplay,
 				},
-				description: 'Optional Tracira check name',
+				description: 'Optional Tracira task name',
 			},
 			{
 				displayName: 'Model',
@@ -304,9 +304,9 @@ export class Tracira implements INodeType {
 				type: 'string',
 				default: '',
 				displayOptions: {
-					show: logDisplay,
+					show: logOperationDisplay,
 				},
-				description: 'Optional AI model name to record with the execution',
+				description: 'Optional AI model name to record with the log',
 			},
 			{
 				displayName: 'Options',
@@ -315,7 +315,7 @@ export class Tracira implements INodeType {
 				placeholder: 'Add Option',
 				default: {},
 				displayOptions: {
-					show: logDisplay,
+					show: logOperationDisplay,
 				},
 				options: [
 					{
@@ -343,7 +343,7 @@ export class Tracira implements INodeType {
 						default: 0,
 					},
 					{
-						displayName: 'Execution ID',
+						displayName: 'Log ID',
 						name: 'id',
 						type: 'string',
 						default: '',
@@ -362,7 +362,21 @@ export class Tracira implements INodeType {
 							rows: 4,
 						},
 						default: '',
-						description: 'Optional JSON object to store as execution metadata',
+						description: 'Optional JSON object to store as log metadata',
+					},
+					{
+						displayName: 'Callback Events',
+						name: 'callbackEvents',
+						type: 'options',
+						default: 'all',
+						options: [
+							{ name: 'All Events (default)', value: 'all' },
+							{ name: 'Flagged & Errors Only', value: 'flagged_error' },
+							{ name: 'Human Decisions Only', value: 'decisions' },
+							{ name: 'Flagged, Errors & Decisions', value: 'flagged_error_decisions' },
+							{ name: 'Pass Only', value: 'pass' },
+						],
+						description: 'Controls which events trigger the Callback URL. Only used when Callback URL is set.',
 					},
 					{
 						displayName: 'Session ID',
@@ -376,6 +390,13 @@ export class Tracira implements INodeType {
 						type: 'string',
 						default: '',
 					},
+					{
+						displayName: 'Sync Mode (Wait for Verdict)',
+						name: 'sync',
+						type: 'boolean',
+						default: false,
+						description: 'Whether to wait for evaluation to complete before continuing. Off (default): n8n continues immediately, Tracira evaluates in the background. On: n8n waits for the full verdict so you can branch on status/verdict.',
+					},
 				],
 			},
 			{
@@ -388,31 +409,32 @@ export class Tracira implements INodeType {
 				},
 				options: [
 					{ name: 'All', value: '' },
-					{ name: 'Success', value: 'success' },
+					{ name: 'Pending', value: 'pending' },
+					{ name: 'Pass', value: 'pass' },
 					{ name: 'Flagged', value: 'flagged' },
-					{ name: 'Failed', value: 'failed' },
+					{ name: 'Error', value: 'error' },
 				],
-				description: 'Filter executions by status',
+				description: 'Filter logs by status',
 			},
 			{
-				displayName: 'Flow',
-				name: 'flowFilter',
+				displayName: 'Project',
+				name: 'projectFilter',
 				type: 'string',
 				default: '',
 				displayOptions: {
 					show: getAllDisplay,
 				},
-				description: 'Filter executions to a specific flow name',
+				description: 'Filter logs to a specific project name',
 			},
 			{
-				displayName: 'Check',
-				name: 'checkFilter',
+				displayName: 'Task',
+				name: 'taskFilter',
 				type: 'string',
 				default: '',
 				displayOptions: {
 					show: getAllDisplay,
 				},
-				description: 'Filter executions to a specific check name',
+				description: 'Filter logs to a specific task name',
 			},
 			{
 				displayName: 'Search Query',
@@ -422,7 +444,7 @@ export class Tracira implements INodeType {
 				displayOptions: {
 					show: getAllDisplay,
 				},
-				description: 'Search across flow, check, model, and context IDs',
+				description: 'Search across project, task, model, and context IDs',
 			},
 			{
 				displayName: 'From',
@@ -432,7 +454,7 @@ export class Tracira implements INodeType {
 				displayOptions: {
 					show: getAllDisplay,
 				},
-				description: 'Only include executions at or after this date',
+				description: 'Only include logs at or after this date',
 			},
 			{
 				displayName: 'To',
@@ -442,7 +464,7 @@ export class Tracira implements INodeType {
 				displayOptions: {
 					show: getAllDisplay,
 				},
-				description: 'Only include executions up to this date',
+				description: 'Only include logs up to this date',
 			},
 			{
 				displayName: 'Limit',
@@ -506,7 +528,7 @@ export class Tracira implements INodeType {
 				name: 'apiPath',
 				type: 'string',
 				required: true,
-				default: '/executions',
+				default: '/logs',
 				displayOptions: {
 					show: apiCallDisplay,
 				},
@@ -582,7 +604,7 @@ export class Tracira implements INodeType {
 				const operation = this.getNodeParameter('operation', itemIndex) as string;
 				let requestOptions: IHttpRequestOptions;
 
-				if (resource === 'execution' && operation === 'log') {
+				if (resource === 'log' && operation === 'log') {
 					const options = this.getNodeParameter('options', itemIndex, {}) as IDataObject;
 					let metadata: IDataObject | undefined;
 
@@ -600,13 +622,14 @@ export class Tracira implements INodeType {
 						method: 'POST',
 						url: `${baseUrl}/webhook`,
 						body: stripEmpty({
-							flow: this.getNodeParameter('flowName', itemIndex) as string,
+							project: this.getNodeParameter('projectName', itemIndex) as string,
 							output: this.getNodeParameter('output', itemIndex) as string,
 							input: this.getNodeParameter('input', itemIndex, '') as string,
-							check: this.getNodeParameter('checkName', itemIndex, '') as string,
+							task: this.getNodeParameter('taskName', itemIndex, '') as string,
 							model: this.getNodeParameter('modelName', itemIndex, '') as string,
 							actorId: options.actorId as string | undefined,
 							callbackUrl: options.callbackUrl as string | undefined,
+							callbackEvents: options.callbackEvents as string | undefined,
 							confidence: options.confidence as number | undefined,
 							costUsd: options.costUsd as number | undefined,
 							id: options.id as string | undefined,
@@ -614,25 +637,26 @@ export class Tracira implements INodeType {
 							metadata,
 							sessionId: options.sessionId as string | undefined,
 							subjectId: options.subjectId as string | undefined,
+							sync: options.sync as boolean | undefined,
 						}),
 					};
-				} else if (resource === 'execution' && operation === 'get') {
-					const executionId = this.getNodeParameter('executionId', itemIndex) as string;
+				} else if (resource === 'log' && operation === 'get') {
+					const logId = this.getNodeParameter('logId', itemIndex) as string;
 
 					requestOptions = {
 						method: 'GET',
-						url: `${baseUrl}/executions/${encodeURIComponent(executionId)}`,
+						url: `${baseUrl}/logs/${encodeURIComponent(logId)}`,
 					};
-				} else if (resource === 'execution' && operation === 'getAll') {
+				} else if (resource === 'log' && operation === 'getAll') {
 					const filters = this.getNodeParameter('filters', itemIndex, {}) as IDataObject;
 
 					requestOptions = {
 						method: 'GET',
-						url: `${baseUrl}/executions`,
+						url: `${baseUrl}/logs`,
 						qs: stripEmpty({
 							status: this.getNodeParameter('status', itemIndex, '') as string,
-							flow: this.getNodeParameter('flowFilter', itemIndex, '') as string,
-							check: this.getNodeParameter('checkFilter', itemIndex, '') as string,
+							project: this.getNodeParameter('projectFilter', itemIndex, '') as string,
+							task: this.getNodeParameter('taskFilter', itemIndex, '') as string,
 							q: this.getNodeParameter('query', itemIndex, '') as string,
 							from: this.getNodeParameter('from', itemIndex, '') as string,
 							to: this.getNodeParameter('to', itemIndex, '') as string,
@@ -643,13 +667,13 @@ export class Tracira implements INodeType {
 							subjectId: filters.subjectId as string | undefined,
 						}),
 					};
-				} else if (resource === 'execution' && operation === 'setDecision') {
-					const executionId = this.getNodeParameter('decisionExecutionId', itemIndex) as string;
+				} else if (resource === 'log' && operation === 'setDecision') {
+					const logId = this.getNodeParameter('decisionLogId', itemIndex) as string;
 					const decision = this.getNodeParameter('decision', itemIndex) as string;
 
 					requestOptions = {
 						method: 'PATCH',
-						url: `${baseUrl}/executions/${encodeURIComponent(executionId)}/decision`,
+						url: `${baseUrl}/logs/${encodeURIComponent(logId)}/decision`,
 						body: {
 							decision,
 						},
@@ -687,10 +711,10 @@ export class Tracira implements INodeType {
 					requestOptions,
 				);
 
-				if (resource === 'execution' && operation === 'getAll' && Array.isArray(response?.executions)) {
-					for (const execution of response.executions) {
+				if (resource === 'log' && operation === 'getAll' && Array.isArray(response?.executions)) {
+					for (const log of response.executions) {
 						returnData.push({
-							json: execution as IDataObject,
+							json: log as IDataObject,
 							pairedItem: itemIndex,
 						});
 					}

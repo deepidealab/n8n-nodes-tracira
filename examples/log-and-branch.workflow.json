@@ -14,17 +14,17 @@
     },
     {
       "parameters": {
-        "resource": "execution",
+        "resource": "log",
         "operation": "log",
-        "flowName": {
+        "projectName": {
           "mode": "name",
-          "value": "support-reply-flow"
+          "value": "support-reply"
         },
         "output": "={{ $json.output ?? \"Thanks for reaching out. We have escalated your request to the team.\" }}",
         "input": "={{ $json.input ?? \"Draft a customer support reply for ticket #1234\" }}",
-        "checkName": {
+        "taskName": {
           "mode": "name",
-          "value": "support-reply-check"
+          "value": "draft-reply"
         },
         "modelName": {
           "mode": "name",

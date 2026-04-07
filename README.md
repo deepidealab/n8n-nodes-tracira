@@ -2,7 +2,7 @@
 
 This is an n8n community node for Tracira.
 
-Tracira monitors AI outputs from your automations, evaluates them against rules, and lets you inspect execution results from inside n8n workflows.
+Tracira monitors AI outputs from your automations, evaluates them against rules, and lets you inspect log results from inside n8n workflows.
 
 [n8n](https://n8n.io/) is a [fair-code licensed](https://docs.n8n.io/sustainable-use-license/) workflow automation platform.
 
@@ -27,16 +27,29 @@ npm run verify
 
 ## Operations
 
-The node currently supports the `Execution` resource with these operations:
+The node currently supports the `Log` resource with these operations:
 
-- `Log`: Send an AI execution to Tracira for evaluation.
-- `Get`: Fetch a single execution by ID.
-- `Get Many`: List executions with filters such as status, flow, check, and date range.
-- `Set Decision`: Approve or reject a flagged execution.
+- `Log`: Send an AI output to Tracira for evaluation. Supports async (default) and sync modes, callback URL with event filtering, and all standard context fields.
+- `Get`: Fetch a single log by ID.
+- `Get Many`: List logs with filters such as status, project, task, and date range.
+- `Set Decision`: Approve or reject a flagged log.
 
 The node also supports the `API` resource with:
 
 - `Call`: Make an arbitrary authenticated request to the Tracira API.
+
+### Sync vs async
+
+By default the `Log` operation is **async**: Tracira responds immediately with `{ ok, id, status: "pending" }` and evaluates in the background. Your workflow continues without waiting.
+
+Enable **Sync mode** in the Options to make Tracira wait for the full evaluation before responding. Use this when you want to branch immediately on `status` or `verdict` in the same workflow execution.
+
+## Keeping this node in sync with the Tracira API
+
+The Tracira Make custom app (`make-app/` in the main repo) is the reference integration. When the Tracira API changes — new webhook fields, renamed endpoints, new status values — both the Make app and this n8n node must be updated together.
+
+**Not yet implemented** (deferred — too complex for n8n's current node UI):
+- Multimodal input / file attachments (`attachments`, `inputText`). The Make app supports uploading files or passing URLs; the n8n equivalent requires a complex array param and is deferred until a cleaner pattern is established.
 
 ## Credentials
 
@@ -60,11 +73,9 @@ This package is being set up against the current n8n community-node tooling and 
 Typical pattern:
 
 1. Run your AI step in n8n.
-2. Send the model output to `Tracira -> Execution -> Log`.
+2. Send the model output to `Tracira -> Log -> Log`.
 3. Branch on the returned `status`, `verdict`, or `confidenceScore`.
-4. Optionally query historic executions with `Get` or `Get Many`.
-
-Current scope intentionally focuses on token-authenticated operations. Human decision updates are not included yet because the corresponding Tracira backend route is not token-authenticated.
+4. Optionally query historic logs with `Get` or `Get Many`.
 
 ## Example workflow
 
@@ -96,6 +107,14 @@ Maintainer release instructions are documented in [PUBLISHING.md](./PUBLISHING.m
 - [Tracira API schema](https://www.tracira.com/openapi.json)
 
 ## Version history
+
+### 0.3.1
+
+Add `Sync mode` and `Callback Events` options to the Log operation, matching the Make custom app.
+
+### 0.3.0
+
+Rename terminology to match Tracira API: Execution→Log, Flow→Project, Check→Task. API paths updated from `/executions` to `/logs`. Breaking change — existing workflows must update the resource value and field names.
 
 ### 0.2.1
 
