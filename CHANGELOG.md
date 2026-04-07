@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.2] - 2026-04-07
+
+### Fixed
+- Lint errors: alphabetized collection options and status filter options; fixed title case on Callback Events option.
+- GitHub Actions workflow: opted into Node.js 24 to silence Node 20 deprecation warnings.
+
 ## [0.3.1] - 2026-04-07
 
 ### Added
