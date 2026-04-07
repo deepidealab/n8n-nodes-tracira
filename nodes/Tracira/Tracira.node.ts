@@ -357,10 +357,11 @@ export class Tracira implements INodeType {
 						default: 0,
 					},
 					{
-						displayName: 'Latency (ms)',
+						displayName: 'Latency',
 						name: 'latencyMs',
 						type: 'number',
 						default: 0,
+						description: 'Duration of the AI call in milliseconds',
 					},
 					{
 						displayName: 'Log ID',

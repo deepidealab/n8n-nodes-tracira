@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.5] - 2026-04-07
+
+### Fixed
+- Lint: reverted "Latency (ms)" display name to "Latency" with a description (n8n title-case rule disallows lowercase abbreviations in parentheses).
+
 ## [0.3.4] - 2026-04-07
 
 ### Added
