@@ -42,6 +42,11 @@ const setDecisionDisplay = {
 	operation: ['setDecision'],
 };
 
+const flagDisplay = {
+	resource: ['log'],
+	operation: ['flag'],
+};
+
 const apiCallDisplay = {
 	resource: ['api'],
 	operation: ['call'],
@@ -163,10 +168,10 @@ export class Tracira implements INodeType {
 				},
 				options: [
 					{
-						name: 'Log',
-						value: 'log',
-						action: 'Log an AI output',
-						description: 'Send an AI output to Tracira for evaluation',
+						name: 'Flag',
+						value: 'flag',
+						action: 'Flag a log for review',
+						description: 'Flag an evaluated log for human review, e.g. when an end-user reports an issue',
 					},
 					{
 						name: 'Get',
@@ -179,6 +184,12 @@ export class Tracira implements INodeType {
 						value: 'getAll',
 						action: 'Get many logs',
 						description: 'List logs from Tracira',
+					},
+					{
+						name: 'Log',
+						value: 'log',
+						action: 'Log an AI output',
+						description: 'Send an AI output to Tracira for evaluation',
 					},
 					{
 						name: 'Set Decision',
@@ -249,6 +260,31 @@ export class Tracira implements INodeType {
 					},
 				],
 				description: 'The human review decision to record',
+			},
+			{
+				displayName: 'Log ID',
+				name: 'flagLogId',
+				type: 'string',
+				required: true,
+				default: '',
+				displayOptions: {
+					show: flagDisplay,
+				},
+				description: 'The log ID to flag for review',
+			},
+			{
+				displayName: 'Reason',
+				name: 'flagReason',
+				type: 'string',
+				typeOptions: {
+					rows: 3,
+				},
+				default: '',
+				displayOptions: {
+					show: flagDisplay,
+				},
+				description:
+					'Optional reason for flagging, stored as the log explanation, for example the message your end-user submitted when reporting the issue',
 			},
 			{
 				displayName: 'Project',
@@ -686,6 +722,18 @@ export class Tracira implements INodeType {
 						body: {
 							decision,
 						},
+					};
+				} else if (resource === 'log' && operation === 'flag') {
+					const logId = this.getNodeParameter('flagLogId', itemIndex) as string;
+					const reason = this.getNodeParameter('flagReason', itemIndex, '') as string;
+
+					requestOptions = {
+						method: 'PATCH',
+						url: `${baseUrl}/logs/${encodeURIComponent(logId)}/status`,
+						body: stripEmpty({
+							status: 'flagged',
+							reason,
+						}),
 					};
 				} else if (resource === 'api' && operation === 'call') {
 					const headers = parseJsonObject(

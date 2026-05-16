@@ -33,6 +33,7 @@ The node currently supports the `Log` resource with these operations:
 - `Get`: Fetch a single log by ID.
 - `Get Many`: List logs with filters such as status, project, task, and date range.
 - `Set Decision`: Approve or reject a flagged log.
+- `Flag`: Flag an evaluated log for human review — for example when an end-user reports an issue with an AI response. The log re-enters the pending-review queue and notification channels fire.
 
 The node also supports the `API` resource with:
 
@@ -116,6 +117,10 @@ Do **not** publish manually from a local machine — provenance requires the Git
 - [Tracira API schema](https://www.tracira.com/openapi.json)
 
 ## Version history
+
+### 0.4.0
+
+Add the `Flag` operation to the `Log` resource — flag an evaluated log for human review when an end-user reports an issue, matching the Make custom app.
 
 ### 0.3.1
 

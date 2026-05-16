@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0] - 2026-05-16
+
+### Added
+- `Flag` operation on the `Log` resource — flags an evaluated log for human review (`PATCH /api/logs/{id}/status`), e.g. when an end-user reports an issue with an AI response. Optional `Reason` is stored as the log explanation. The log re-enters the pending-review queue and notification channels fire.
+
 ## [0.3.5] - 2026-04-07
 
 ### Fixed
