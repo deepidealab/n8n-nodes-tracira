@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0] - 2026-05-17
+
+### Changed
+- **Behavior change**: the `Log` operation now waits for the evaluation verdict by default. `Sync Mode` has been promoted out of `Options` to a top-level `Wait for Verdict` field, defaulting to **on** — the node returns the full verdict (`status`, `verdict`, `confidenceScore`, `explanation`) so you can branch on it without extra steps. Turn it off for fire-and-forget logging. Existing `Log` steps that relied on the previous async default will now wait for the verdict.
+
+### Added
+- The async path of `POST /api/logs` now responds with HTTP `202 Accepted` (was `200`); n8n treats it as success unchanged. Sync responses now always include `ok: true`.
+
 ## [0.4.0] - 2026-05-16
 
 ### Added

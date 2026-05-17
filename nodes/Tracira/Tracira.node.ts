@@ -345,6 +345,17 @@ export class Tracira implements INodeType {
 				description: 'Optional AI model name to record with the log',
 			},
 			{
+				displayName: 'Wait for Verdict',
+				name: 'sync',
+				type: 'boolean',
+				default: true,
+				displayOptions: {
+					show: logOperationDisplay,
+				},
+				description:
+					'Whether to wait for evaluation to finish and return the full verdict (status, verdict, confidence, explanation) so you can branch on it. On by default; evaluation is capped at 30 seconds. Turn off for high-volume fire-and-forget logging — n8n continues immediately (HTTP 202) and Tracira evaluates in the background.',
+			},
+			{
 				displayName: 'Options',
 				name: 'options',
 				type: 'collection',
@@ -426,13 +437,6 @@ export class Tracira implements INodeType {
 						name: 'subjectId',
 						type: 'string',
 						default: '',
-					},
-					{
-						displayName: 'Sync Mode (Wait for Verdict)',
-						name: 'sync',
-						type: 'boolean',
-						default: false,
-						description: 'Whether to wait for evaluation to complete before continuing. Off (default): n8n continues immediately, Tracira evaluates in the background. On: n8n waits for the full verdict so you can branch on status/verdict.',
 					},
 					{
 						displayName: 'Timestamp',
@@ -681,7 +685,7 @@ export class Tracira implements INodeType {
 							metadata,
 							sessionId: options.sessionId as string | undefined,
 							subjectId: options.subjectId as string | undefined,
-							sync: options.sync as boolean | undefined,
+							sync: this.getNodeParameter('sync', itemIndex, true) as boolean,
 							timestamp: options.timestamp as string | undefined,
 						}),
 					};

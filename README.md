@@ -29,7 +29,7 @@ npm run verify
 
 The node currently supports the `Log` resource with these operations:
 
-- `Log`: Send an AI output to Tracira for evaluation. Supports async (default) and sync modes, callback URL with event filtering, and all standard context fields.
+- `Log`: Send an AI output to Tracira for evaluation. Waits for the verdict by default; supports async (fire-and-forget) mode, callback URL with event filtering, and all standard context fields.
 - `Get`: Fetch a single log by ID.
 - `Get Many`: List logs with filters such as status, project, task, and date range.
 - `Set Decision`: Approve or reject a flagged log.
@@ -41,9 +41,9 @@ The node also supports the `API` resource with:
 
 ### Sync vs async
 
-By default the `Log` operation is **async**: Tracira responds immediately with `{ ok, id, status: "pending" }` and evaluates in the background. Your workflow continues without waiting.
+By default the `Log` operation **waits for the verdict** (`Wait for Verdict` is on): Tracira evaluates inline and responds with the full `{ ok, id, status, verdict, confidenceScore, explanation }` so you can branch on `status` or `verdict` in the same workflow execution. Evaluation is capped at 30 seconds.
 
-Enable **Sync mode** in the Options to make Tracira wait for the full evaluation before responding. Use this when you want to branch immediately on `status` or `verdict` in the same workflow execution.
+Turn **Wait for Verdict** off for fire-and-forget logging: Tracira responds immediately with HTTP `202` and `{ ok, id, status: "pending" }`, then evaluates in the background. Use this for high-volume logging where you don't need the verdict inline.
 
 ## Keeping this node in sync with the Tracira API
 
@@ -117,6 +117,10 @@ Do **not** publish manually from a local machine — provenance requires the Git
 - [Tracira API schema](https://www.tracira.com/openapi.json)
 
 ## Version history
+
+### 0.5.0
+
+`Wait for Verdict` is now on by default and promoted to a top-level field on the `Log` operation — the node waits for the evaluation result so you can branch on it immediately. Turn it off for fire-and-forget logging (async, HTTP `202`). Behavior change: existing `Log` steps that relied on the previous async default will now wait for the verdict.
 
 ### 0.4.0
 
