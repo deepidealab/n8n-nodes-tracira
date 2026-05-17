@@ -255,11 +255,34 @@ export class Tracira implements INodeType {
 						value: 'approved',
 					},
 					{
+						name: 'Changed',
+						value: 'changed',
+						description: 'Send the log back to the AI with a comment to regenerate',
+					},
+					{
 						name: 'Rejected',
 						value: 'rejected',
 					},
 				],
 				description: 'The human review decision to record',
+			},
+			{
+				displayName: 'Comment',
+				name: 'comment',
+				type: 'string',
+				typeOptions: {
+					rows: 3,
+				},
+				required: true,
+				default: '',
+				displayOptions: {
+					show: {
+						...setDecisionDisplay,
+						decision: ['changed'],
+					},
+				},
+				description:
+					'The instruction sent back to the AI describing what to change. Required when Decision is Changed. The AI should regenerate the output and resubmit it with the Log operation, setting Revision Of to this log ID.',
 			},
 			{
 				displayName: 'Log ID',
@@ -425,6 +448,14 @@ export class Tracira implements INodeType {
 						},
 						default: '',
 						description: 'Optional JSON object to store as log metadata',
+					},
+					{
+						displayName: 'Revision Of',
+						name: 'revisionOf',
+						type: 'string',
+						default: '',
+						description:
+							'The original log ID when this output is a regeneration triggered by a Changed decision. Tracira links the two as a revision chain so reviewers see every attempt.',
 					},
 					{
 						displayName: 'Session ID',
@@ -681,6 +712,7 @@ export class Tracira implements INodeType {
 							confidence: options.confidence as number | undefined,
 							costUsd: options.costUsd as number | undefined,
 							id: options.id as string | undefined,
+							revisionOf: options.revisionOf as string | undefined,
 							latencyMs: options.latencyMs as number | undefined,
 							metadata,
 							sessionId: options.sessionId as string | undefined,
@@ -719,13 +751,26 @@ export class Tracira implements INodeType {
 				} else if (resource === 'log' && operation === 'setDecision') {
 					const logId = this.getNodeParameter('decisionLogId', itemIndex) as string;
 					const decision = this.getNodeParameter('decision', itemIndex) as string;
+					const comment =
+						decision === 'changed'
+							? (this.getNodeParameter('comment', itemIndex, '') as string)
+							: '';
+
+					if (decision === 'changed' && !comment.trim()) {
+						throw new NodeOperationError(
+							this.getNode(),
+							'Comment is required when Decision is Changed',
+							{ itemIndex },
+						);
+					}
 
 					requestOptions = {
 						method: 'PATCH',
 						url: `${baseUrl}/logs/${encodeURIComponent(logId)}/decision`,
-						body: {
+						body: stripEmpty({
 							decision,
-						},
+							comment: comment || undefined,
+						}),
 					};
 				} else if (resource === 'log' && operation === 'flag') {
 					const logId = this.getNodeParameter('flagLogId', itemIndex) as string;

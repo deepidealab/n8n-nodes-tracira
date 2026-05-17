@@ -32,7 +32,7 @@ The node currently supports the `Log` resource with these operations:
 - `Log`: Send an AI output to Tracira for evaluation. Waits for the verdict by default; supports async (fire-and-forget) mode, callback URL with event filtering, and all standard context fields.
 - `Get`: Fetch a single log by ID.
 - `Get Many`: List logs with filters such as status, project, task, and date range.
-- `Set Decision`: Approve or reject a flagged log.
+- `Set Decision`: Approve or reject a flagged log, or send it back to the AI with a comment (`Changed`). When you choose `Changed`, the comment is delivered to the downstream automation, which regenerates the output and resubmits it with the `Log` operation's `Revision Of` field set to the original log ID — forming a revision chain.
 - `Flag`: Flag an evaluated log for human review — for example when an end-user reports an issue with an AI response. The log re-enters the pending-review queue and notification channels fire.
 
 The node also supports the `API` resource with:

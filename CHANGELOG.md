@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0] - 2026-05-18
+
+### Added
+- `Changed` decision on the `Set Decision` operation — send a flagged log back to the AI with a `Comment` instead of approving or rejecting it. The comment is delivered to the downstream automation (via the log's callback URL or the workspace webhook), which regenerates the output. `Comment` is required when `Decision` is `Changed`.
+- `Revision Of` option on the `Log` operation — set it to the original log ID when resubmitting a regenerated output. Tracira links the attempts into a revision chain so reviewers can see every iteration.
+
 ## [0.5.0] - 2026-05-17
 
 ### Changed
