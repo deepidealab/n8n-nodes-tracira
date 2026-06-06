@@ -30,8 +30,8 @@ export class TraciraApi implements ICredentialType {
 	authenticate: IAuthenticateGeneric = {
 		type: 'generic',
 		properties: {
-			qs: {
-				token: '={{$credentials.webhookToken}}',
+			headers: {
+				Authorization: '=Bearer {{$credentials.webhookToken}}',
 			},
 		},
 	};

@@ -34,6 +34,9 @@ The node currently supports the `Log` resource with these operations:
 - `Get Many`: List logs with filters such as status, project, task, and date range.
 - `Set Decision`: Approve or reject a flagged log, or send it back to the AI with a comment (`Changed`). When you choose `Changed`, the comment is delivered to the downstream automation, which regenerates the output and resubmits it with the `Log` operation's `Revision Of` field set to the original log ID — forming a revision chain.
 - `Flag`: Flag an evaluated log for human review — for example when an end-user reports an issue with an AI response. The log re-enters the pending-review queue and notification channels fire.
+- `Upload File`: Upload a large file (PDF, image, audio) directly to Tracira storage and get back a `key`. Use it for files over ~3 MB that exceed the request size limit; map a binary field (e.g. `data`). Supports up to 32 MB. Pass the returned `key` to the `Log` operation's `Attachments` field.
+
+The `Log` operation also has an `Attachments` field: attach files by `Uploaded File (Key)` (from the `Upload File` operation) or by `URL`. Small files can be sent as a URL; large files should go through `Upload File` first.
 
 The node also supports the `API` resource with:
 
@@ -49,9 +52,6 @@ Turn **Wait for Verdict** off for fire-and-forget logging: Tracira responds imme
 
 The Tracira Make custom app (`make-app/` in the main repo) is the reference integration. When the Tracira API changes — new webhook fields, renamed endpoints, new status values — both the Make app and this n8n node must be updated together.
 
-**Not yet implemented** (deferred — too complex for n8n's current node UI):
-- Multimodal input / file attachments (`attachments`, `inputText`). The Make app supports uploading files or passing URLs; the n8n equivalent requires a complex array param and is deferred until a cleaner pattern is established.
-
 ## Credentials
 
 Use the `Tracira API` credential.
@@ -63,7 +63,7 @@ You need a workspace webhook token from your Tracira dashboard:
 3. Copy the webhook token.
 4. Paste it into the `Workspace Token` field in n8n.
 
-The credential test calls `GET /api/verify` on Tracira and uses the token as a query parameter.
+The credential test calls `GET /api/verify` on Tracira and sends the token as an `Authorization: Bearer <token>` header.
 
 ## Compatibility
 

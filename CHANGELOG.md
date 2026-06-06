@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.0] - 2026-06-06
+
+### Fixed
+- **Authentication**: the credential now sends the workspace token as an `Authorization: Bearer` header instead of a `?token=` query parameter. The Tracira API only reads the header, so earlier versions failed with `401 Missing token` on every request. Upgrade and your existing credential keeps working — no re-configuration needed.
+
+### Added
+- `Upload File` operation on the `Log` resource — upload a large file (PDF, image, audio) directly to Tracira storage and get back a `key`. Use it for files over ~3 MB that exceed the request size limit; map a binary field (e.g. `data`). Supports up to 32 MB. The file is uploaded straight to storage via a presigned URL, bypassing the request body limit.
+- `Attachments` field on the `Log` operation — attach files by `Uploaded File (Key)` (from the `Upload File` operation) or by `URL`. This brings file/attachment support to the n8n node, previously only available in the Make app.
+
 ## [0.6.0] - 2026-05-18
 
 ### Added

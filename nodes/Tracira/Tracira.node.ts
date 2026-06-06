@@ -47,6 +47,11 @@ const flagDisplay = {
 	operation: ['flag'],
 };
 
+const uploadDisplay = {
+	resource: ['log'],
+	operation: ['upload'],
+};
+
 const apiCallDisplay = {
 	resource: ['api'],
 	operation: ['call'],
@@ -197,6 +202,13 @@ export class Tracira implements INodeType {
 						action: 'Set a decision for a log',
 						description: 'Approve or reject a flagged log',
 					},
+					{
+						name: 'Upload File',
+						value: 'upload',
+						action: 'Upload a file',
+						description:
+							'Upload a large file directly to Tracira storage, then attach it to a log by key',
+					},
 				],
 				default: 'log',
 			},
@@ -310,6 +322,30 @@ export class Tracira implements INodeType {
 					'Optional reason for flagging, stored as the log explanation, for example the message your end-user submitted when reporting the issue',
 			},
 			{
+				displayName: 'Input Binary Field',
+				name: 'binaryPropertyName',
+				type: 'string',
+				required: true,
+				default: 'data',
+				displayOptions: {
+					show: uploadDisplay,
+				},
+				hint: 'The name of the input field containing the binary file to upload',
+				description:
+					'Name of the input binary field holding the file (PDF, image, or audio) to upload. The file goes straight to storage, bypassing the request size limit. Up to 32 MB.',
+			},
+			{
+				displayName: 'File Name',
+				name: 'uploadFileName',
+				type: 'string',
+				default: '',
+				displayOptions: {
+					show: uploadDisplay,
+				},
+				description:
+					'Optional file name. Overrides the binary field name; its extension is used to detect the file type.',
+			},
+			{
 				displayName: 'Project',
 				name: 'projectName',
 				type: 'string',
@@ -346,6 +382,71 @@ export class Tracira implements INodeType {
 					show: logOperationDisplay,
 				},
 				description: 'Optional prompt or input text that produced the output',
+			},
+			{
+				displayName: 'Attachments',
+				name: 'attachments',
+				type: 'fixedCollection',
+				typeOptions: {
+					multipleValues: true,
+				},
+				placeholder: 'Add Attachment',
+				default: {},
+				displayOptions: {
+					show: logOperationDisplay,
+				},
+				description: 'Files to attach to the log (the source the AI worked from)',
+				options: [
+					{
+						name: 'attachment',
+						displayName: 'Attachment',
+						values: [
+							{
+								displayName: 'Source',
+								name: 'source',
+								type: 'options',
+								default: 'uploaded',
+								options: [
+									{ name: 'Uploaded File (Key)', value: 'uploaded' },
+									{ name: 'URL', value: 'url' },
+								],
+								description: 'Where the file comes from',
+							},
+							{
+								displayName: 'Attachment Key',
+								name: 'key',
+								type: 'string',
+								default: '',
+								displayOptions: {
+									show: {
+										source: ['uploaded'],
+									},
+								},
+								description:
+									'The key returned by an Upload File operation. Use this for large files (over 3 MB) that cannot be sent inline.',
+							},
+							{
+								displayName: 'URL',
+								name: 'url',
+								type: 'string',
+								default: '',
+								displayOptions: {
+									show: {
+										source: ['url'],
+									},
+								},
+								description: 'HTTPS URL to a publicly accessible image, audio file, or PDF',
+							},
+							{
+								displayName: 'File Name',
+								name: 'filename',
+								type: 'string',
+								default: '',
+								description: 'Optional original file name shown to reviewers',
+							},
+						],
+					},
+				],
 			},
 			{
 				displayName: 'Task',
@@ -697,6 +798,23 @@ export class Tracira implements INodeType {
 						}
 					}
 
+					const attachmentsParam = this.getNodeParameter(
+						'attachments',
+						itemIndex,
+						{},
+					) as IDataObject;
+					const attachmentRows = (attachmentsParam.attachment as IDataObject[] | undefined) ?? [];
+					const attachments = attachmentRows
+						.map((row) =>
+							stripEmpty({
+								source: row.source as string | undefined,
+								key: row.key as string | undefined,
+								url: row.url as string | undefined,
+								filename: row.filename as string | undefined,
+							}),
+						)
+						.filter((row) => row.key !== undefined || row.url !== undefined);
+
 					requestOptions = {
 						method: 'POST',
 						url: `${baseUrl}/logs`,
@@ -706,6 +824,7 @@ export class Tracira implements INodeType {
 							input: this.getNodeParameter('input', itemIndex, '') as string,
 							task: this.getNodeParameter('taskName', itemIndex, '') as string,
 							model: this.getNodeParameter('modelName', itemIndex, '') as string,
+							attachments: attachments.length ? attachments : undefined,
 							actorId: options.actorId as string | undefined,
 							callbackUrl: options.callbackUrl as string | undefined,
 							callbackEvents: options.callbackEvents as string | undefined,
@@ -784,6 +903,65 @@ export class Tracira implements INodeType {
 							reason,
 						}),
 					};
+				} else if (resource === 'log' && operation === 'upload') {
+					const binaryPropertyName = this.getNodeParameter(
+						'binaryPropertyName',
+						itemIndex,
+						'data',
+					) as string;
+					const fileNameOverride = this.getNodeParameter(
+						'uploadFileName',
+						itemIndex,
+						'',
+					) as string;
+
+					const binary = this.helpers.assertBinaryData(itemIndex, binaryPropertyName);
+					const buffer = await this.helpers.getBinaryDataBuffer(itemIndex, binaryPropertyName);
+					const filename = fileNameOverride || binary.fileName || 'file';
+
+					// 1. Create the upload (authenticated) — returns a presigned R2 URL.
+					const presign = (await this.helpers.httpRequestWithAuthentication.call(
+						this,
+						'traciraApi',
+						{
+							method: 'POST',
+							url: `${baseUrl}/uploads`,
+							body: stripEmpty({
+								filename,
+								contentType: binary.mimeType,
+								sizeBytes: buffer.length,
+							}),
+						},
+					)) as IDataObject;
+
+					const uploadUrl = presign.uploadUrl as string | undefined;
+					const key = presign.key as string | undefined;
+					const contentType = (presign.contentType as string | undefined) ?? binary.mimeType;
+
+					if (!uploadUrl || !key) {
+						throw new NodeOperationError(
+							this.getNode(),
+							'Tracira did not return an upload URL',
+							{ itemIndex },
+						);
+					}
+
+					// 2. PUT the bytes straight to R2 with NO Authorization header — the
+					// presigned URL carries its own query signature, and an extra auth
+					// header makes R2 reject the upload.
+					await this.helpers.httpRequest({
+						method: 'PUT',
+						url: uploadUrl,
+						body: buffer,
+						headers: { 'Content-Type': contentType },
+						json: false,
+					});
+
+					returnData.push({
+						json: { key, contentType },
+						pairedItem: itemIndex,
+					});
+					continue;
 				} else if (resource === 'api' && operation === 'call') {
 					const headers = parseJsonObject(
 						this.getNodeParameter('apiHeadersJson', itemIndex, '{}') as string,
