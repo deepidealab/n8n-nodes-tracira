@@ -27,16 +27,16 @@ npm run verify
 
 ## Operations
 
-The node currently supports the `Log` resource with these operations:
+The node currently supports the `Log` resource with these operations (named to match the Tracira Make app modules):
 
-- `Log`: Send an AI output to Tracira for evaluation. Waits for the verdict by default; supports async (fire-and-forget) mode, callback URL with event filtering, and all standard context fields.
-- `Get`: Fetch a single log by ID.
-- `Get Many`: List logs with filters such as status, project, task, and date range.
-- `Set Decision`: Approve or reject a flagged log, or send it back to the AI with a comment (`Changed`). When you choose `Changed`, the comment is delivered to the downstream automation, which regenerates the output and resubmits it with the `Log` operation's `Revision Of` field set to the original log ID — forming a revision chain.
-- `Flag`: Flag an evaluated log for human review — for example when an end-user reports an issue with an AI response. The log re-enters the pending-review queue and notification channels fire.
-- `Upload File`: Upload a large file (PDF, image, audio) directly to Tracira storage and get back a `key`. Use it for files over ~3 MB that exceed the request size limit; map a binary field (e.g. `data`). Supports up to 32 MB. Pass the returned `key` to the `Log` operation's `Attachments` field.
+- `Create a Log`: Send an AI output to Tracira and create a log for evaluation. Waits for the verdict by default; supports async (fire-and-forget) mode, callback URL with event filtering, and all standard context fields. `Project Name` and `Task Name` offer a searchable dropdown of your existing Tracira projects/tasks, or accept a new name typed manually.
+- `Get a Log`: Fetch a single log by ID.
+- `Search Logs`: List logs with filters such as status, project, task, and date range.
+- `Set a Decision`: `Approve` or `Reject` a flagged log, or `Send Back for Changes` with a comment. The comment is delivered to the downstream automation, which regenerates the output and resubmits it with the `Create a Log` operation's `Revision Of` field set to the original log ID — forming a revision chain.
+- `Flag a Log`: Flag an evaluated log for human review — for example when an end-user reports an issue with an AI response. The log re-enters the pending-review queue and notification channels fire.
+- `Upload a File`: Upload a large file (PDF, image, audio) directly to Tracira storage and get back a `key`. Use it for files over ~3 MB that exceed the request size limit; map a binary field (e.g. `data`). Supports up to 32 MB. Pass the returned `key` to the `Create a Log` operation's `Attachments` field.
 
-The `Log` operation also has an `Attachments` field: attach files by `Uploaded File (Key)` (from the `Upload File` operation) or by `URL`. Small files can be sent as a URL; large files should go through `Upload File` first.
+The `Create a Log` operation also has an `Attachments` field with three sources: `Upload File` (send a binary field inline with the request — keep under ~3 MB), `From URL` (a publicly accessible HTTPS URL), or `Tracira Upload` (a `key` from the `Upload a File` operation, for large files).
 
 The node also supports the `API` resource with:
 
@@ -44,7 +44,7 @@ The node also supports the `API` resource with:
 
 ### Sync vs async
 
-By default the `Log` operation **waits for the verdict** (`Wait for Verdict` is on): Tracira evaluates inline and responds with the full `{ ok, id, status, verdict, confidenceScore, explanation }` so you can branch on `status` or `verdict` in the same workflow execution. Evaluation is capped at 30 seconds.
+By default the `Create a Log` operation **waits for the verdict** (`Wait for Verdict` is on): Tracira evaluates inline and responds with the full `{ ok, id, status, verdict, confidenceScore, explanation }` so you can branch on `status` or `verdict` in the same workflow execution. Evaluation is capped at 30 seconds.
 
 Turn **Wait for Verdict** off for fire-and-forget logging: Tracira responds immediately with HTTP `202` and `{ ok, id, status: "pending" }`, then evaluates in the background. Use this for high-volume logging where you don't need the verdict inline.
 
@@ -74,9 +74,9 @@ This package is being set up against the current n8n community-node tooling and 
 Typical pattern:
 
 1. Run your AI step in n8n.
-2. Send the model output to `Tracira -> Log -> Log`.
+2. Send the model output to `Tracira -> Log -> Create a Log`.
 3. Branch on the returned `status`, `verdict`, or `confidenceScore`.
-4. Optionally query historic logs with `Get` or `Get Many`.
+4. Optionally query historic logs with `Get a Log` or `Search Logs`.
 
 ## Example workflow
 

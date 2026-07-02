@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.0] - 2026-07-02
+
+### Changed
+- **Operation names now match the Tracira Make app modules**: `Log` → `Create a Log`, `Get` → `Get a Log`, `Get Many` → `Search Logs`, `Set Decision` → `Set a Decision`, `Flag` → `Flag a Log`, `Upload File` → `Upload a File`. Field labels follow the Make app too (`Project Name`, `AI Output`, `Text Prompt`, `Task Name`, `AI Model`, `From Date`, `To Date`), and the decision options are now `Approve`, `Reject`, and `Send Back for Changes`.
+- **Breaking**: the `Get Many` operation's internal value changed from `getAll` to `search`. Existing workflows using that operation must reselect it.
+- `Project Name` and `Task Name` (on `Create a Log` and `Search Logs`) are now searchable dropdowns backed by the Tracira API (`GET /projects`, `GET /logs/tasks`), matching the Make app's dynamic pickers. A manual name can still be typed — new project names are auto-created on first use.
+- Compliance fixes for n8n verification: `NodeOperationError` instead of `ApplicationError`, `NodeConnectionTypes.Main` instead of string literals, and a themed (light/dark) node icon.
+
+### Added
+- `Upload File` (inline binary) source on the `Create a Log` operation's `Attachments` field, matching the Make app — sends a binary field base64-inline with the request (keep under ~3 MB; use `Upload a File` + `Tracira Upload` for bigger files).
+- `Content Type` override on the `Upload a File` operation for files whose name has no recognizable extension, matching the Make app.
+
+### Removed
+- Dead code from an earlier structure (`listSearch/getFlows|getChecks|getModels`, `resources/`) that referenced retired API endpoints.
+
 ## [0.7.0] - 2026-06-06
 
 ### Fixed

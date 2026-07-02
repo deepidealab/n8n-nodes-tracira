@@ -5,12 +5,15 @@ import type {
 	IHttpRequestMethods,
 	IHttpRequestOptions,
 	IN8nHttpFullResponse,
+	INode,
 	INodeExecutionData,
 	INodeProperties,
 	INodeType,
 	INodeTypeDescription,
 } from 'n8n-workflow';
-import { ApplicationError, NodeOperationError } from 'n8n-workflow';
+import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
+import { getProjects } from './listSearch/getProjects';
+import { getTasks } from './listSearch/getTasks';
 
 const baseUrl = 'https://www.tracira.com/api';
 
@@ -34,7 +37,7 @@ const getDisplay = {
 
 const getAllDisplay = {
 	resource: ['log'],
-	operation: ['getAll'],
+	operation: ['search'],
 };
 
 const setDecisionDisplay = {
@@ -63,28 +66,29 @@ function stripEmpty(data: IDataObject): IDataObject {
 	);
 }
 
-function normalizeApiPath(path: string): string {
+function normalizeApiPath(path: string, node: INode): string {
 	if (!path.trim()) return '/';
 	if (path.startsWith('http://') || path.startsWith('https://')) {
-		throw new ApplicationError(
+		throw new NodeOperationError(
+			node,
 			'Use a path relative to https://www.tracira.com/api, for example /logs',
 		);
 	}
 	return path.startsWith('/') ? path : `/${path}`;
 }
 
-function parseJsonObject(text: string, fieldName: string): IDataObject {
+function parseJsonObject(text: string, fieldName: string, node: INode): IDataObject {
 	if (!text.trim()) return {};
 
 	let parsed: unknown;
 	try {
 		parsed = JSON.parse(text);
 	} catch {
-		throw new ApplicationError(`${fieldName} must be valid JSON`);
+		throw new NodeOperationError(node, `${fieldName} must be valid JSON`);
 	}
 
 	if (parsed === null || Array.isArray(parsed) || typeof parsed !== 'object') {
-		throw new ApplicationError(`${fieldName} must be a JSON object`);
+		throw new NodeOperationError(node, `${fieldName} must be a JSON object`);
 	}
 
 	return parsed as IDataObject;
@@ -113,7 +117,7 @@ export class Tracira implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Tracira',
 		name: 'tracira',
-		icon: 'file:tracira.svg',
+		icon: { light: 'file:tracira.svg', dark: 'file:tracira.dark.svg' },
 		group: ['transform'],
 		version: 1,
 		subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
@@ -137,8 +141,8 @@ export class Tracira implements INodeType {
 		defaults: {
 			name: 'Tracira',
 		},
-		inputs: ['main'],
-		outputs: ['main'],
+		inputs: [NodeConnectionTypes.Main],
+		outputs: [NodeConnectionTypes.Main],
 		credentials: [
 			{
 				name: 'traciraApi',
@@ -173,37 +177,41 @@ export class Tracira implements INodeType {
 				},
 				options: [
 					{
-						name: 'Flag',
+						name: 'Create a Log',
+						value: 'log',
+						action: 'Create a log',
+						description:
+							'Send an AI output to Tracira and create a log for evaluation. Returns a verdict, confidence score, and explanation based on your configured rules.',
+					},
+					{
+						name: 'Flag a Log',
 						value: 'flag',
-						action: 'Flag a log for review',
+						action: 'Flag a log',
 						description: 'Flag an evaluated log for human review, e.g. when an end-user reports an issue',
 					},
 					{
-						name: 'Get',
+						name: 'Get a Log',
 						value: 'get',
 						action: 'Get a log',
-						description: 'Fetch a single log by ID',
+						description:
+							'Fetch a single log by ID, including verdict, explanation, and human decision',
 					},
 					{
-						name: 'Get Many',
-						value: 'getAll',
-						action: 'Get many logs',
-						description: 'List logs from Tracira',
+						name: 'Search Logs',
+						value: 'search',
+						action: 'Search logs',
+						description:
+							'Return a filtered list of logs from Tracira. Filter by status, project, task name, or date range.',
 					},
 					{
-						name: 'Log',
-						value: 'log',
-						action: 'Log an AI output',
-						description: 'Send an AI output to Tracira for evaluation',
-					},
-					{
-						name: 'Set Decision',
+						name: 'Set a Decision',
 						value: 'setDecision',
-						action: 'Set a decision for a log',
-						description: 'Approve or reject a flagged log',
+						action: 'Set a decision',
+						description:
+							'Approve, reject, or send a flagged log back to the AI with a comment',
 					},
 					{
-						name: 'Upload File',
+						name: 'Upload a File',
 						value: 'upload',
 						action: 'Upload a file',
 						description:
@@ -263,20 +271,21 @@ export class Tracira implements INodeType {
 				},
 				options: [
 					{
-						name: 'Approved',
+						name: 'Approve',
 						value: 'approved',
 					},
 					{
-						name: 'Changed',
+						name: 'Reject',
+						value: 'rejected',
+					},
+					{
+						name: 'Send Back for Changes',
 						value: 'changed',
 						description: 'Send the log back to the AI with a comment to regenerate',
 					},
-					{
-						name: 'Rejected',
-						value: 'rejected',
-					},
 				],
-				description: 'The human review decision to record',
+				description:
+					'Approve or reject the flagged log, or send it back to the AI with a comment',
 			},
 			{
 				displayName: 'Comment',
@@ -294,7 +303,7 @@ export class Tracira implements INodeType {
 					},
 				},
 				description:
-					'The instruction sent back to the AI describing what to change. Required when Decision is Changed. The AI should regenerate the output and resubmit it with the Log operation, setting Revision Of to this log ID.',
+					'The instruction sent back to the AI describing what to change. Required when Decision is Send Back for Changes. The AI should regenerate the output and resubmit it with the Create a Log operation, setting Revision Of to this log ID.',
 			},
 			{
 				displayName: 'Log ID',
@@ -346,18 +355,46 @@ export class Tracira implements INodeType {
 					'Optional file name. Overrides the binary field name; its extension is used to detect the file type.',
 			},
 			{
-				displayName: 'Project',
-				name: 'projectName',
+				displayName: 'Content Type',
+				name: 'uploadContentType',
 				type: 'string',
-				required: true,
 				default: '',
+				displayOptions: {
+					show: uploadDisplay,
+				},
+				description:
+					'Optional. Override the MIME type (e.g. application/pdf, image/png). Only needed when the file name has no recognizable extension.',
+			},
+			{
+				displayName: 'Project Name',
+				name: 'projectName',
+				type: 'resourceLocator',
+				required: true,
+				default: { mode: 'list', value: '' },
 				displayOptions: {
 					show: logOperationDisplay,
 				},
-				description: 'The Tracira project name for this log',
+				description:
+					'Select an existing project or enter a new name — it will be auto-created in Tracira on first use',
+				modes: [
+					{
+						displayName: 'From List',
+						name: 'list',
+						type: 'list',
+						typeOptions: {
+							searchListMethod: 'getProjects',
+							searchable: true,
+						},
+					},
+					{
+						displayName: 'Name',
+						name: 'name',
+						type: 'string',
+					},
+				],
 			},
 			{
-				displayName: 'Output',
+				displayName: 'AI Output',
 				name: 'output',
 				type: 'string',
 				typeOptions: {
@@ -368,10 +405,10 @@ export class Tracira implements INodeType {
 				displayOptions: {
 					show: logOperationDisplay,
 				},
-				description: 'The AI-generated output to evaluate in Tracira',
+				description: 'The AI-generated output to evaluate against your Tracira rules',
 			},
 			{
-				displayName: 'Input',
+				displayName: 'Text Prompt',
 				name: 'input',
 				type: 'string',
 				typeOptions: {
@@ -381,7 +418,7 @@ export class Tracira implements INodeType {
 				displayOptions: {
 					show: logOperationDisplay,
 				},
-				description: 'Optional prompt or input text that produced the output',
+				description: 'Optional text sent to your AI model alongside any attachments',
 			},
 			{
 				displayName: 'Attachments',
@@ -395,23 +432,13 @@ export class Tracira implements INodeType {
 				displayOptions: {
 					show: logOperationDisplay,
 				},
-				description: 'Files to attach to the log (the source the AI worked from)',
+				description:
+					'Files to attach to the log (the source the AI worked from). Tracira auto-detects whether each attachment is an image, audio file, or document.',
 				options: [
 					{
 						name: 'attachment',
 						displayName: 'Attachment',
 						values: [
-							{
-								displayName: 'Source',
-								name: 'source',
-								type: 'options',
-								default: 'uploaded',
-								options: [
-									{ name: 'Uploaded File (Key)', value: 'uploaded' },
-									{ name: 'URL', value: 'url' },
-								],
-								description: 'Where the file comes from',
-							},
 							{
 								displayName: 'Attachment Key',
 								name: 'key',
@@ -423,7 +450,54 @@ export class Tracira implements INodeType {
 									},
 								},
 								description:
-									'The key returned by an Upload File operation. Use this for large files (over 3 MB) that cannot be sent inline.',
+									'The key returned by an Upload a File operation. Use this for large files (over 3 MB) that cannot be sent inline.',
+							},
+							{
+								displayName: 'File Name',
+								name: 'filename',
+								type: 'string',
+								default: '',
+								description: 'Optional original file name shown to reviewers',
+							},
+							{
+								displayName: 'Input Binary Field',
+								name: 'binaryProperty',
+								type: 'string',
+								default: 'data',
+								displayOptions: {
+									show: {
+										source: ['upload'],
+									},
+								},
+								hint: 'The name of the input field containing the binary file to attach',
+								description:
+									'The file is sent inline with this request. The whole request is limited to 4.5 MB, so keep inline files under ~3 MB. For larger files, use the Upload a File operation first, then attach with source "Tracira Upload".',
+							},
+							{
+								displayName: 'Source',
+								name: 'source',
+								type: 'options',
+								default: 'upload',
+								options: [
+									{
+										name: 'From URL',
+										value: 'url',
+										description: 'HTTPS URL to a publicly accessible file',
+									},
+									{
+										name: 'Tracira Upload',
+										value: 'uploaded',
+										description:
+											'A key returned by the Upload a File operation — use for files over ~3 MB',
+									},
+									{
+										name: 'Upload File',
+										value: 'upload',
+										description:
+											'Send a binary file inline with this request (keep under ~3 MB)',
+									},
+								],
+								description: 'Where the file comes from',
 							},
 							{
 								displayName: 'URL',
@@ -437,36 +511,47 @@ export class Tracira implements INodeType {
 								},
 								description: 'HTTPS URL to a publicly accessible image, audio file, or PDF',
 							},
-							{
-								displayName: 'File Name',
-								name: 'filename',
-								type: 'string',
-								default: '',
-								description: 'Optional original file name shown to reviewers',
-							},
 						],
 					},
 				],
 			},
 			{
-				displayName: 'Task',
+				displayName: 'Task Name',
 				name: 'taskName',
-				type: 'string',
-				default: '',
+				type: 'resourceLocator',
+				default: { mode: 'list', value: '' },
 				displayOptions: {
 					show: logOperationDisplay,
 				},
-				description: 'Optional Tracira task name',
+				description:
+					'Optional. Select an existing task or enter a new name (e.g. "Tone Validator", "Reply Generator").',
+				modes: [
+					{
+						displayName: 'From List',
+						name: 'list',
+						type: 'list',
+						typeOptions: {
+							searchListMethod: 'getTasks',
+							searchable: true,
+						},
+					},
+					{
+						displayName: 'Name',
+						name: 'name',
+						type: 'string',
+					},
+				],
 			},
 			{
-				displayName: 'Model',
+				displayName: 'AI Model',
 				name: 'modelName',
 				type: 'string',
 				default: '',
 				displayOptions: {
 					show: logOperationDisplay,
 				},
-				description: 'Optional AI model name to record with the log',
+				description:
+					'Optional. The name of the AI model that produced this output, exactly as you use it — e.g. "gpt-4o", "claude-sonnet-4-5".',
 			},
 			{
 				displayName: 'Wait for Verdict',
@@ -597,24 +682,56 @@ export class Tracira implements INodeType {
 				description: 'Filter logs by status',
 			},
 			{
-				displayName: 'Project',
+				displayName: 'Project Name',
 				name: 'projectFilter',
-				type: 'string',
-				default: '',
+				type: 'resourceLocator',
+				default: { mode: 'list', value: '' },
 				displayOptions: {
 					show: getAllDisplay,
 				},
-				description: 'Filter logs to a specific project name',
+				description: 'Optional. Filter logs to a specific project name.',
+				modes: [
+					{
+						displayName: 'From List',
+						name: 'list',
+						type: 'list',
+						typeOptions: {
+							searchListMethod: 'getProjects',
+							searchable: true,
+						},
+					},
+					{
+						displayName: 'Name',
+						name: 'name',
+						type: 'string',
+					},
+				],
 			},
 			{
-				displayName: 'Task',
+				displayName: 'Task Name',
 				name: 'taskFilter',
-				type: 'string',
-				default: '',
+				type: 'resourceLocator',
+				default: { mode: 'list', value: '' },
 				displayOptions: {
 					show: getAllDisplay,
 				},
-				description: 'Filter logs to a specific task name',
+				description: 'Optional. Filter logs to a specific task name within a project.',
+				modes: [
+					{
+						displayName: 'From List',
+						name: 'list',
+						type: 'list',
+						typeOptions: {
+							searchListMethod: 'getTasks',
+							searchable: true,
+						},
+					},
+					{
+						displayName: 'Name',
+						name: 'name',
+						type: 'string',
+					},
+				],
 			},
 			{
 				displayName: 'Search Query',
@@ -627,7 +744,7 @@ export class Tracira implements INodeType {
 				description: 'Search across project, task, model, and context IDs',
 			},
 			{
-				displayName: 'From',
+				displayName: 'From Date',
 				name: 'from',
 				type: 'dateTime',
 				default: '',
@@ -637,7 +754,7 @@ export class Tracira implements INodeType {
 				description: 'Only include logs at or after this date',
 			},
 			{
-				displayName: 'To',
+				displayName: 'To Date',
 				name: 'to',
 				type: 'dateTime',
 				default: '',
@@ -774,6 +891,13 @@ export class Tracira implements INodeType {
 		] as INodeProperties[],
 	};
 
+	methods = {
+		listSearch: {
+			getProjects,
+			getTasks,
+		},
+	};
+
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const items = this.getInputData();
 		const returnData: INodeExecutionData[] = [];
@@ -804,25 +928,48 @@ export class Tracira implements INodeType {
 						{},
 					) as IDataObject;
 					const attachmentRows = (attachmentsParam.attachment as IDataObject[] | undefined) ?? [];
-					const attachments = attachmentRows
-						.map((row) =>
-							stripEmpty({
-								source: row.source as string | undefined,
-								key: row.key as string | undefined,
-								url: row.url as string | undefined,
-								filename: row.filename as string | undefined,
-							}),
-						)
-						.filter((row) => row.key !== undefined || row.url !== undefined);
+					const attachments: IDataObject[] = [];
+
+					for (const row of attachmentRows) {
+						if (row.source === 'upload') {
+							const binaryProperty = (row.binaryProperty as string) || 'data';
+							const binary = this.helpers.assertBinaryData(itemIndex, binaryProperty);
+							const buffer = await this.helpers.getBinaryDataBuffer(itemIndex, binaryProperty);
+
+							attachments.push(
+								stripEmpty({
+									source: 'upload',
+									data: buffer.toString('base64'),
+									filename: (row.filename as string) || binary.fileName || 'file',
+								}),
+							);
+							continue;
+						}
+
+						const entry = stripEmpty({
+							source: row.source as string | undefined,
+							key: row.key as string | undefined,
+							url: row.url as string | undefined,
+							filename: row.filename as string | undefined,
+						});
+
+						if (entry.key !== undefined || entry.url !== undefined) {
+							attachments.push(entry);
+						}
+					}
 
 					requestOptions = {
 						method: 'POST',
 						url: `${baseUrl}/logs`,
 						body: stripEmpty({
-							project: this.getNodeParameter('projectName', itemIndex) as string,
+							project: this.getNodeParameter('projectName', itemIndex, '', {
+								extractValue: true,
+							}) as string,
 							output: this.getNodeParameter('output', itemIndex) as string,
 							input: this.getNodeParameter('input', itemIndex, '') as string,
-							task: this.getNodeParameter('taskName', itemIndex, '') as string,
+							task: this.getNodeParameter('taskName', itemIndex, '', {
+								extractValue: true,
+							}) as string,
 							model: this.getNodeParameter('modelName', itemIndex, '') as string,
 							attachments: attachments.length ? attachments : undefined,
 							actorId: options.actorId as string | undefined,
@@ -847,7 +994,7 @@ export class Tracira implements INodeType {
 						method: 'GET',
 						url: `${baseUrl}/logs/${encodeURIComponent(logId)}`,
 					};
-				} else if (resource === 'log' && operation === 'getAll') {
+				} else if (resource === 'log' && operation === 'search') {
 					const filters = this.getNodeParameter('filters', itemIndex, {}) as IDataObject;
 
 					requestOptions = {
@@ -855,8 +1002,12 @@ export class Tracira implements INodeType {
 						url: `${baseUrl}/logs`,
 						qs: stripEmpty({
 							status: this.getNodeParameter('status', itemIndex, '') as string,
-							project: this.getNodeParameter('projectFilter', itemIndex, '') as string,
-							task: this.getNodeParameter('taskFilter', itemIndex, '') as string,
+							project: this.getNodeParameter('projectFilter', itemIndex, '', {
+								extractValue: true,
+							}) as string,
+							task: this.getNodeParameter('taskFilter', itemIndex, '', {
+								extractValue: true,
+							}) as string,
 							q: this.getNodeParameter('query', itemIndex, '') as string,
 							from: this.getNodeParameter('from', itemIndex, '') as string,
 							to: this.getNodeParameter('to', itemIndex, '') as string,
@@ -878,7 +1029,7 @@ export class Tracira implements INodeType {
 					if (decision === 'changed' && !comment.trim()) {
 						throw new NodeOperationError(
 							this.getNode(),
-							'Comment is required when Decision is Changed',
+							'Comment is required when Decision is Send Back for Changes',
 							{ itemIndex },
 						);
 					}
@@ -915,6 +1066,12 @@ export class Tracira implements INodeType {
 						'',
 					) as string;
 
+					const contentTypeOverride = this.getNodeParameter(
+						'uploadContentType',
+						itemIndex,
+						'',
+					) as string;
+
 					const binary = this.helpers.assertBinaryData(itemIndex, binaryPropertyName);
 					const buffer = await this.helpers.getBinaryDataBuffer(itemIndex, binaryPropertyName);
 					const filename = fileNameOverride || binary.fileName || 'file';
@@ -928,7 +1085,7 @@ export class Tracira implements INodeType {
 							url: `${baseUrl}/uploads`,
 							body: stripEmpty({
 								filename,
-								contentType: binary.mimeType,
+								contentType: contentTypeOverride || binary.mimeType,
 								sizeBytes: buffer.length,
 							}),
 						},
@@ -936,7 +1093,9 @@ export class Tracira implements INodeType {
 
 					const uploadUrl = presign.uploadUrl as string | undefined;
 					const key = presign.key as string | undefined;
-					const contentType = (presign.contentType as string | undefined) ?? binary.mimeType;
+					const contentType =
+						(presign.contentType as string | undefined) ??
+						(contentTypeOverride || binary.mimeType);
 
 					if (!uploadUrl || !key) {
 						throw new NodeOperationError(
@@ -966,10 +1125,12 @@ export class Tracira implements INodeType {
 					const headers = parseJsonObject(
 						this.getNodeParameter('apiHeadersJson', itemIndex, '{}') as string,
 						'Headers JSON',
+						this.getNode(),
 					);
 					const qs = parseJsonObject(
 						this.getNodeParameter('apiQueryJson', itemIndex, '{}') as string,
 						'Query String JSON',
+						this.getNode(),
 					);
 					const body = parseOptionalJsonBody(
 						this.getNodeParameter('apiBody', itemIndex, '') as string,
@@ -977,7 +1138,7 @@ export class Tracira implements INodeType {
 
 					requestOptions = {
 						method: this.getNodeParameter('apiMethod', itemIndex) as IHttpRequestMethods,
-						url: `${baseUrl}${normalizeApiPath(this.getNodeParameter('apiPath', itemIndex) as string)}`,
+						url: `${baseUrl}${normalizeApiPath(this.getNodeParameter('apiPath', itemIndex) as string, this.getNode())}`,
 						headers,
 						qs,
 						body,
@@ -995,7 +1156,7 @@ export class Tracira implements INodeType {
 					requestOptions,
 				);
 
-				if (resource === 'log' && operation === 'getAll' && Array.isArray(response?.executions)) {
+				if (resource === 'log' && operation === 'search' && Array.isArray(response?.executions)) {
 					for (const log of response.executions) {
 						returnData.push({
 							json: log as IDataObject,

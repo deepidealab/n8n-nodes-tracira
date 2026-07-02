@@ -5,28 +5,26 @@ import type {
 } from 'n8n-workflow';
 import { traciraApiRequest } from '../shared/transport';
 
-type ModelOption = {
-	label: string;
-	value: string;
+type Project = {
+	id: string;
+	name: string;
+	icon?: string;
 };
 
-export async function getModels(
+export async function getProjects(
 	this: ILoadOptionsFunctions,
 	filter?: string,
 ): Promise<INodeListSearchResult> {
-	const responseData = (await traciraApiRequest.call(this, 'GET', '/models')) as ModelOption[];
+	const responseData = (await traciraApiRequest.call(this, 'GET', '/projects')) as Project[];
 	const normalizedFilter = (filter ?? '').trim().toLowerCase();
 
 	const results: INodeListSearchItems[] = responseData
 		.filter(
-			(model) =>
-				!normalizedFilter ||
-				model.label.toLowerCase().includes(normalizedFilter) ||
-				model.value.toLowerCase().includes(normalizedFilter),
+			(project) => !normalizedFilter || project.name.toLowerCase().includes(normalizedFilter),
 		)
-		.map((model) => ({
-			name: model.label,
-			value: model.value,
+		.map((project) => ({
+			name: project.name,
+			value: project.name,
 		}));
 
 	return { results };

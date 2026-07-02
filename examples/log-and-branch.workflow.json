@@ -17,19 +17,18 @@
         "resource": "log",
         "operation": "log",
         "projectName": {
+          "__rl": true,
           "mode": "name",
           "value": "support-reply"
         },
         "output": "={{ $json.output ?? \"Thanks for reaching out. We have escalated your request to the team.\" }}",
         "input": "={{ $json.input ?? \"Draft a customer support reply for ticket #1234\" }}",
         "taskName": {
+          "__rl": true,
           "mode": "name",
           "value": "draft-reply"
         },
-        "modelName": {
-          "mode": "name",
-          "value": "gpt-5-mini"
-        },
+        "modelName": "gpt-5-mini",
         "options": {
           "sessionId": "ticket-1234",
           "subjectId": "1234"
@@ -60,9 +59,9 @@
           },
           "conditions": [
             {
-              "id": "status-is-success",
+              "id": "status-is-pass",
               "leftValue": "={{ $json.status }}",
-              "rightValue": "success",
+              "rightValue": "pass",
               "operator": {
                 "type": "string",
                 "operation": "equals"

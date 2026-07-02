@@ -1,6 +1,6 @@
 {
   "name": "@deepidealab/n8n-nodes-tracira",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Official n8n community node for Tracira AI output monitoring and approval workflows.",
   "license": "MIT",
   "homepage": "https://github.com/deepidealab/n8n-nodes-tracira",
@@ -50,7 +50,7 @@
     ]
   },
   "devDependencies": {
-    "@n8n/node-cli": "*",
+    "@n8n/node-cli": "^0.37.3",
     "eslint": "9.32.0",
     "prettier": "3.6.2",
     "release-it": "^19.0.4",
