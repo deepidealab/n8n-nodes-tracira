@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.1] - 2026-07-02
+
+### Added
+- The node can now be used as a tool by n8n AI Agents (`usableAsTool`). On self-hosted instances older than n8n 1.79, set `N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true`.
+- `examples/verification-demo.workflow.json` — an importable workflow that walks through the common operations (Create a Log → Get a Log → Flag a Log → Set a Decision → Search Logs) and an AI Agent using the Tracira node as a tool.
+
 ## [0.8.0] - 2026-07-02
 
 ### Changed

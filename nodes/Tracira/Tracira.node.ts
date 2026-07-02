@@ -1,4 +1,3 @@
-/* eslint-disable @n8n/community-nodes/node-usable-as-tool */
 import type {
 	IDataObject,
 	IExecuteFunctions,
@@ -122,6 +121,7 @@ export class Tracira implements INodeType {
 		version: 1,
 		subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
 		description: 'Log and inspect Tracira AI log data',
+		usableAsTool: true,
 		codex: {
 			categories: ['AI'],
 			resources: {

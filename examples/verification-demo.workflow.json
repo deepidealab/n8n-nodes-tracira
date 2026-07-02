@@ -1,0 +1,310 @@
+{
+  "name": "Tracira Verification Demo",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## 1. Common actions\nRun this branch with **Execute workflow**.\n\nCreate a Log → Get a Log → Flag a Log → Set a Decision → Search Logs.\n\nEvery operation reuses the `id` returned by **Create a Log**.",
+        "height": 260,
+        "width": 360
+      },
+      "id": "sticky-actions",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [180, 40]
+    },
+    {
+      "parameters": {
+        "content": "## 2. AI agent tool\nOpen the chat and ask e.g.:\n\n*\"Search my Tracira logs and summarize what my AI team did.\"*\n\nThe agent calls the **Tracira** node as a tool.",
+        "height": 240,
+        "width": 340
+      },
+      "id": "sticky-agent",
+      "name": "Sticky Note 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [180, 620]
+    },
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "When clicking Execute workflow",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [260, 340]
+    },
+    {
+      "parameters": {
+        "resource": "log",
+        "operation": "log",
+        "projectName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "support-replies"
+        },
+        "output": "Thanks for reaching out! I've checked your order #4512 and it shipped this morning. You should receive a tracking email within the hour. Anything else I can help with?",
+        "input": "Customer asked: Where is my order #4512? It was supposed to arrive yesterday.",
+        "taskName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "draft-reply"
+        },
+        "modelName": "gpt-4o",
+        "sync": true,
+        "options": {
+          "sessionId": "demo-session-1",
+          "subjectId": "order-4512",
+          "latencyMs": 1240,
+          "costUsd": 0.0034
+        }
+      },
+      "id": "tracira-create-log",
+      "name": "Create a Log",
+      "type": "@deepidealab/n8n-nodes-tracira.tracira",
+      "typeVersion": 1,
+      "position": [480, 340],
+      "credentials": {
+        "traciraApi": {
+          "id": "replace-me",
+          "name": "Tracira API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "log",
+        "operation": "get",
+        "logId": "={{ $json.id }}"
+      },
+      "id": "tracira-get-log",
+      "name": "Get a Log",
+      "type": "@deepidealab/n8n-nodes-tracira.tracira",
+      "typeVersion": 1,
+      "position": [700, 340],
+      "credentials": {
+        "traciraApi": {
+          "id": "replace-me",
+          "name": "Tracira API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "log",
+        "operation": "flag",
+        "flagLogId": "={{ $('Create a Log').item.json.id }}",
+        "flagReason": "Demo: end-user reported the reply referenced the wrong shipping date."
+      },
+      "id": "tracira-flag-log",
+      "name": "Flag a Log",
+      "type": "@deepidealab/n8n-nodes-tracira.tracira",
+      "typeVersion": 1,
+      "position": [920, 340],
+      "credentials": {
+        "traciraApi": {
+          "id": "replace-me",
+          "name": "Tracira API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "log",
+        "operation": "setDecision",
+        "decisionLogId": "={{ $('Create a Log').item.json.id }}",
+        "decision": "approved"
+      },
+      "id": "tracira-set-decision",
+      "name": "Set a Decision",
+      "type": "@deepidealab/n8n-nodes-tracira.tracira",
+      "typeVersion": 1,
+      "position": [1140, 340],
+      "credentials": {
+        "traciraApi": {
+          "id": "replace-me",
+          "name": "Tracira API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "log",
+        "operation": "search",
+        "projectFilter": {
+          "__rl": true,
+          "mode": "name",
+          "value": "support-replies"
+        },
+        "limit": 10
+      },
+      "id": "tracira-search-logs",
+      "name": "Search Logs",
+      "type": "@deepidealab/n8n-nodes-tracira.tracira",
+      "typeVersion": 1,
+      "position": [1360, 340],
+      "credentials": {
+        "traciraApi": {
+          "id": "replace-me",
+          "name": "Tracira API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "chat-trigger",
+      "name": "When chat message received",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [260, 920],
+      "webhookId": "6f1c8f2e-1d5a-4b8e-9f3a-demo00000001"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "ai-agent",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [560, 920]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "id": "openai-model",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [480, 1140],
+      "credentials": {
+        "openAiApi": {
+          "id": "replace-me-openai",
+          "name": "OpenAI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "log",
+        "operation": "search",
+        "limit": 20
+      },
+      "id": "tracira-tool",
+      "name": "Search Logs in Tracira",
+      "type": "@deepidealab/n8n-nodes-tracira.traciraTool",
+      "typeVersion": 1,
+      "position": [700, 1140],
+      "credentials": {
+        "traciraApi": {
+          "id": "replace-me",
+          "name": "Tracira API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "When clicking Execute workflow": {
+      "main": [
+        [
+          {
+            "node": "Create a Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a Log": {
+      "main": [
+        [
+          {
+            "node": "Get a Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a Log": {
+      "main": [
+        [
+          {
+            "node": "Flag a Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Flag a Log": {
+      "main": [
+        [
+          {
+            "node": "Set a Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set a Decision": {
+      "main": [
+        [
+          {
+            "node": "Search Logs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Logs in Tracira": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "00000000-0000-0000-0000-000000000002",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "pinData": {}
+}
