@@ -1,8 +1,8 @@
 {
-	"node": "@deepidealab/n8n-nodes-tracira",
+	"node": "@deepidealab/n8n-nodes-tracira.tracira",
 	"nodeVersion": "1.0",
 	"codexVersion": "1.0",
-	"categories": ["AI"],
+	"categories": ["Analytics"],
 	"resources": {
 		"credentialDocumentation": [
 			{

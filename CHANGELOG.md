@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.2] - 2026-07-03
+
+### Fixed
+- Compliance fixes from the n8n verification review of 0.8.1:
+  - HTTP request failures are now re-thrown as `NodeApiError` (instead of `NodeOperationError`), preserving the HTTP status code and response body in the n8n execution UI.
+  - The codex `node` field now uses the fully-qualified identifier `@deepidealab/n8n-nodes-tracira.tracira`.
+  - The codex category `AI` (unsupported, silently dropped by the n8n UI) is replaced with `Analytics` in both `Tracira.node.json` and the inline codex.
+
 ## [0.8.1] - 2026-07-02
 
 ### Added

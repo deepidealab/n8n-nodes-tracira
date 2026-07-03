@@ -9,8 +9,9 @@ import type {
 	INodeProperties,
 	INodeType,
 	INodeTypeDescription,
+	JsonObject,
 } from 'n8n-workflow';
-import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
+import { NodeApiError, NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 import { getProjects } from './listSearch/getProjects';
 import { getTasks } from './listSearch/getTasks';
 
@@ -123,7 +124,7 @@ export class Tracira implements INodeType {
 		description: 'Log and inspect Tracira AI log data',
 		usableAsTool: true,
 		codex: {
-			categories: ['AI'],
+			categories: ['Analytics'],
 			resources: {
 				credentialDocumentation: [
 					{
@@ -1185,11 +1186,11 @@ export class Tracira implements INodeType {
 					continue;
 				}
 
-				throw new NodeOperationError(
-					this.getNode(),
-					error instanceof Error ? error.message : 'Unknown Tracira error',
-					{ itemIndex },
-				);
+				// Validation errors are already NodeOperationError; wrap everything else
+				// (HTTP failures) in NodeApiError to keep status code and response body.
+				throw error instanceof NodeOperationError
+					? error
+					: new NodeApiError(this.getNode(), error as JsonObject, { itemIndex });
 			}
 		}
 
