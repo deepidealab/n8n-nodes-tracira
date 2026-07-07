@@ -5,8 +5,9 @@ import type {
 	INodeTypeDescription,
 	IWebhookFunctions,
 	IWebhookResponseData,
+	JsonObject,
 } from 'n8n-workflow';
-import { NodeConnectionTypes } from 'n8n-workflow';
+import { NodeApiError, NodeConnectionTypes } from 'n8n-workflow';
 import { traciraApiRequest } from '../Tracira/shared/transport';
 
 // Webhook triggers cannot run as AI-agent tools, and INodeTypeDescription only
@@ -41,6 +42,9 @@ export class TraciraTrigger implements INodeType {
 		defaults: {
 			name: 'Tracira Trigger',
 		},
+		eventTriggerDescription: 'Waiting for a Tracira verdict or decision',
+		activationMessage:
+			'Your workflow will now start when a log gets a verdict or a human decision in Tracira.',
 		inputs: [],
 		outputs: [NodeConnectionTypes.Main],
 		credentials: [
@@ -85,9 +89,15 @@ export class TraciraTrigger implements INodeType {
 				if (!webhookData.subscriptionId) return false;
 
 				const webhookUrl = this.getNodeWebhookUrl('default');
-				const response = (await traciraApiRequest.call(this, 'GET', '/subscriptions')) as {
-					subscriptions?: Array<{ id: string; url: string }>;
-				};
+				let response: { subscriptions?: Array<{ id: string; url: string }> };
+				try {
+					response = (await traciraApiRequest.call(this, 'GET', '/subscriptions')) as {
+						subscriptions?: Array<{ id: string; url: string }>;
+					};
+				} catch (error) {
+					// Wrap HTTP failures in NodeApiError to keep status code and response body.
+					throw new NodeApiError(this.getNode(), error as JsonObject);
+				}
 				return (response.subscriptions ?? []).some(
 					(subscription) =>
 						subscription.id === webhookData.subscriptionId && subscription.url === webhookUrl,
@@ -98,11 +108,17 @@ export class TraciraTrigger implements INodeType {
 				const webhookUrl = this.getNodeWebhookUrl('default');
 				const events = this.getNodeParameter('events') as string[];
 
-				const response = (await traciraApiRequest.call(this, 'POST', '/subscriptions', {}, {
-					url: webhookUrl,
-					events,
-					source: 'n8n',
-				})) as { id: string };
+				let response: { id: string };
+				try {
+					response = (await traciraApiRequest.call(this, 'POST', '/subscriptions', {}, {
+						url: webhookUrl,
+						events,
+						source: 'n8n',
+					})) as { id: string };
+				} catch (error) {
+					// Wrap HTTP failures in NodeApiError to keep status code and response body.
+					throw new NodeApiError(this.getNode(), error as JsonObject);
+				}
 
 				const webhookData = this.getWorkflowStaticData('node');
 				webhookData.subscriptionId = response.id;

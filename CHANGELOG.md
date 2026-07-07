@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.1] - 2026-07-07
+
+### Fixed
+- Tracira Trigger: HTTP failures during trigger registration/verification are wrapped in `NodeApiError`, preserving the status code and response body in the n8n UI (same convention as the Tracira node's operations).
+- Tracira Trigger: added activation and listen-state messages (`activationMessage`, `eventTriggerDescription`).
+
 ## [0.9.0] - 2026-07-07
 
 ### Added
