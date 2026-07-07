@@ -113,6 +113,29 @@ This package is structured to align with n8n's verification guidance:
 
 Maintainer release instructions are documented in [PUBLISHING.md](./PUBLISHING.md).
 
+### How n8n verification handles versions
+
+The verified listing on n8n Cloud is **pinned to one npm version with a tarball checksum** - publishing a new version to npm changes nothing on the n8n side. Each version must be (re)submitted through the [n8n Creator Portal](https://creators.n8n.io/); the previously verified version stays live during review, and self-hosted users installing by npm name get the latest npm version regardless. To see which version n8n currently has verified:
+
+```bash
+curl -s "https://api.n8n.io/api/community-nodes?filters%5BpackageName%5D%5B%24eq%5D=%40deepidealab%2Fn8n-nodes-tracira" | python3 -m json.tool
+```
+
+Look at `npmVersion` / `nodeVersions` in the response.
+
+### Checklist for adding a new node to this package
+
+Every node class in this package must follow the conventions that got the existing nodes verified (several were explicit n8n review findings):
+
+1. **Codex, twice**: an inline `codex` block in the node description *and* a `<Node>.node.json` file next to the node. The `node` field must be fully qualified (`@deepidealab/n8n-nodes-tracira.<nodeName>`), and the category must be `Analytics` - n8n silently drops the unsupported `AI` category (0.8.1 review finding).
+2. **Error handling**: wrap HTTP failures in `NodeApiError` so the status code and response body survive into the n8n UI - in `execute()` *and* in trigger `webhookMethods` (attach/detach/checkExists). Bare re-throws were a 0.8.1 review finding; the `require-node-api-error` lint rule also flags bare `throw error` of a catch parameter even when `instanceof`-guarded - use `throw error instanceof NodeOperationError ? error : new NodeApiError(...)`.
+3. **Icons**: `tracira.svg` + `tracira.dark.svg` copied into the node's own folder (icon paths are relative to the node file).
+4. **`usableAsTool`**: set `true` on action nodes. Trigger nodes cannot be tools and the type forbids `false`, so exempt the `node-usable-as-tool` lint rule with an inline `eslint-disable-next-line` and a comment saying why.
+5. **Trigger nodes**: name them `<X> Trigger` / `<x>Trigger`, add `activationMessage` and `eventTriggerDescription`, keep the registration id in `getWorkflowStaticData('node')`, and make `checkExists` verify against the API (Tracira auto-prunes dead subscriptions, so a stale local id must re-register).
+6. **Register the node** in `package.json` → `n8n.nodes` (the `dist/...js` path) - the build does not do this for you.
+7. **Field naming and order**: manager-friendly labels matching the Make custom app ("Input Text", "Input Attachments", "AI Output", "Output Attachments"), ordered as the story of the log: project/task → what the AI received → what it produced → behaviour. Renaming a `displayName` is free; **never rename a parameter `name`** - that breaks existing workflows.
+8. **Verify locally** with `npm run lint` + `npm run build` (needs Node 22+; there is no test script, and `scan-community-package` only works on the published package - CI runs it post-publish).
+
 ## Releasing a new version
 
 1. Make changes, bump `package.json` version, update `CHANGELOG.md`.
