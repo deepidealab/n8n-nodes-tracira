@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.0] - 2026-07-07
+
+### Added
+- New **Tracira Trigger** node ("Watch decisions"): starts a workflow the moment a log gets a verdict or a human decision in Tracira - approved, rejected, sent back for changes, flagged, passed, or error. Registers itself with Tracira on workflow activation and deregisters on deactivation; no setup needed in the Tracira dashboard. Decision events include the AI output and log metadata, so an approval workflow can deliver the approved reply with no extra lookup.
+- `Create a Log` now has an **Output Attachments** field for media the AI produced (generated images, synthesized audio, rendered documents). Same three sources as Input Attachments (inline binary, URL, Tracira upload); the media renders as the AI's reply in the log.
+- `Create a Log` now has an optional **Action (Gate Mode)** field for gating a proposed AI action on human review: fill in the action's Name, a plain-language Summary, and optional Parameters (JSON). Reviewers approve or reject the action in Tracira before the workflow executes it; data-field rules can gate it via paths like `action.params.amount`.
+
+### Changed
+- `AI Output` is no longer required: media-only outputs (e.g. image in, image out) can be logged with Output Attachments alone. The API enforces that a log carries either output text or output media.
+- `Text Prompt` is renamed **Input Text** and `Attachments` is renamed **Input Attachments** (parameter names are unchanged, existing workflows keep working). Fields are reordered to read as the story of the log: project/task, what the AI received, what it produced.
+
 ## [0.8.2] - 2026-07-03
 
 ### Fixed

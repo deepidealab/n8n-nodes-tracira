@@ -27,16 +27,28 @@ npm run verify
 
 ## Operations
 
-The node currently supports the `Log` resource with these operations (named to match the Tracira Make app modules):
+The package ships two nodes: **Tracira** (actions) and **Tracira Trigger** (watch decisions).
+
+### Tracira Trigger
+
+Starts a workflow the moment a log gets a verdict or a human decision in Tracira. Pick which events to watch - the default (`approved` / `rejected` / `sent back for changes`) fires once a human has decided, the usual choice for approval flows; `flagged`, `passed`, and `error` evaluation events are opt-in. Activating the workflow registers the trigger with Tracira automatically (visible under Integrations → Connected triggers); deactivating removes it. Decision events include the AI `output` and the log `metadata`, so an approval workflow can deliver the approved reply with no extra lookup.
+
+The typical human-in-the-loop pattern uses two workflows: workflow A creates the log (AI step → `Create a Log`, Wait for Verdict off), and workflow B starts with the Tracira Trigger, filters on `decision = approved`, and delivers the output.
+
+### Tracira (actions)
+
+The node supports the `Log` resource with these operations (named to match the Tracira Make app modules):
 
 - `Create a Log`: Send an AI output to Tracira and create a log for evaluation. Waits for the verdict by default; supports async (fire-and-forget) mode, callback URL with event filtering, and all standard context fields. `Project Name` and `Task Name` offer a searchable dropdown of your existing Tracira projects/tasks, or accept a new name typed manually.
 - `Get a Log`: Fetch a single log by ID.
 - `Search Logs`: List logs with filters such as status, project, task, and date range.
 - `Set a Decision`: `Approve` or `Reject` a flagged log, or `Send Back for Changes` with a comment. The comment is delivered to the downstream automation, which regenerates the output and resubmits it with the `Create a Log` operation's `Revision Of` field set to the original log ID — forming a revision chain.
 - `Flag a Log`: Flag an evaluated log for human review — for example when an end-user reports an issue with an AI response. The log re-enters the pending-review queue and notification channels fire.
-- `Upload a File`: Upload a large file (PDF, image, audio) directly to Tracira storage and get back a `key`. Use it for files over ~3 MB that exceed the request size limit; map a binary field (e.g. `data`). Supports up to 32 MB. Pass the returned `key` to the `Create a Log` operation's `Attachments` field.
+- `Upload a File`: Upload a large file (PDF, image, audio) directly to Tracira storage and get back a `key`. Use it for files over ~3 MB that exceed the request size limit; map a binary field (e.g. `data`). Supports up to 32 MB. Pass the returned `key` to the `Create a Log` operation's `Input Attachments` or `Output Attachments` field.
 
-The `Create a Log` operation also has an `Attachments` field with three sources: `Upload File` (send a binary field inline with the request — keep under ~3 MB), `From URL` (a publicly accessible HTTPS URL), or `Tracira Upload` (a `key` from the `Upload a File` operation, for large files).
+The `Create a Log` operation also has `Input Attachments` (files the AI received) and `Output Attachments` (media the AI produced: generated images, synthesized audio, rendered documents) fields, each with three sources: `Upload File` (send a binary field inline with the request — keep under ~3 MB), `From URL` (a publicly accessible HTTPS URL), or `Tracira Upload` (a `key` from the `Upload a File` operation, for large files). `AI Output` text is required unless an `Output Attachment` carries a media-only output.
+
+The `Create a Log` operation's optional `Action (Gate Mode)` field gates a **proposed action** on human review. When your AI decides to run something with side effects (issue a refund, delete a record), fill in the action's `Name`, a plain-language `Summary`, and optional `Parameters (JSON)`. Reviewers approve or reject the action in Tracira before your workflow executes it, and data-field rules can gate it via paths like `action.params.amount`. Combine with a `Callback URL` so the workflow runs the action only after approval.
 
 The node also supports the `API` resource with:
 

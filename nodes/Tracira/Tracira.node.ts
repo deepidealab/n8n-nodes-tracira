@@ -395,21 +395,34 @@ export class Tracira implements INodeType {
 				],
 			},
 			{
-				displayName: 'AI Output',
-				name: 'output',
-				type: 'string',
-				typeOptions: {
-					rows: 6,
-				},
-				required: true,
-				default: '',
+				displayName: 'Task Name',
+				name: 'taskName',
+				type: 'resourceLocator',
+				default: { mode: 'list', value: '' },
 				displayOptions: {
 					show: logOperationDisplay,
 				},
-				description: 'The AI-generated output to evaluate against your Tracira rules',
+				description:
+					'Optional. Select an existing task or enter a new name (e.g. "Tone Validator", "Reply Generator").',
+				modes: [
+					{
+						displayName: 'From List',
+						name: 'list',
+						type: 'list',
+						typeOptions: {
+							searchListMethod: 'getTasks',
+							searchable: true,
+						},
+					},
+					{
+						displayName: 'Name',
+						name: 'name',
+						type: 'string',
+					},
+				],
 			},
 			{
-				displayName: 'Text Prompt',
+				displayName: 'Input Text',
 				name: 'input',
 				type: 'string',
 				typeOptions: {
@@ -419,10 +432,10 @@ export class Tracira implements INodeType {
 				displayOptions: {
 					show: logOperationDisplay,
 				},
-				description: 'Optional text sent to your AI model alongside any attachments',
+				description: "Optional. The text the AI received: the user's message or the prompt. Shown on the person's side of the log.",
 			},
 			{
-				displayName: 'Attachments',
+				displayName: 'Input Attachments',
 				name: 'attachments',
 				type: 'fixedCollection',
 				typeOptions: {
@@ -434,7 +447,7 @@ export class Tracira implements INodeType {
 					show: logOperationDisplay,
 				},
 				description:
-					'Files to attach to the log (the source the AI worked from). Tracira auto-detects whether each attachment is an image, audio file, or document.',
+					'Files the AI received as input. Tracira auto-detects whether each attachment is an image, audio file, or document.',
 				options: [
 					{
 						name: 'attachment',
@@ -517,29 +530,111 @@ export class Tracira implements INodeType {
 				],
 			},
 			{
-				displayName: 'Task Name',
-				name: 'taskName',
-				type: 'resourceLocator',
-				default: { mode: 'list', value: '' },
+				displayName: 'AI Output',
+				name: 'output',
+				type: 'string',
+				typeOptions: {
+					rows: 6,
+				},
+				default: '',
 				displayOptions: {
 					show: logOperationDisplay,
 				},
 				description:
-					'Optional. Select an existing task or enter a new name (e.g. "Tone Validator", "Reply Generator").',
-				modes: [
+					'The AI-generated text to evaluate against your Tracira rules. Required unless you add an Output Attachment (media-only outputs, e.g. a generated image).',
+			},
+			{
+				displayName: 'Output Attachments',
+				name: 'outputAttachments',
+				type: 'fixedCollection',
+				typeOptions: {
+					multipleValues: true,
+				},
+				placeholder: 'Add Attachment',
+				default: {},
+				displayOptions: {
+					show: logOperationDisplay,
+				},
+				description:
+					"Files the AI produced: generated images, synthesized audio, or rendered documents. Same options as Input Attachments; shown as the AI's reply in the log.",
+				options: [
 					{
-						displayName: 'From List',
-						name: 'list',
-						type: 'list',
-						typeOptions: {
-							searchListMethod: 'getTasks',
-							searchable: true,
-						},
-					},
-					{
-						displayName: 'Name',
-						name: 'name',
-						type: 'string',
+						name: 'attachment',
+						displayName: 'Attachment',
+						values: [
+							{
+								displayName: 'Attachment Key',
+								name: 'key',
+								type: 'string',
+								default: '',
+								displayOptions: {
+									show: {
+										source: ['uploaded'],
+									},
+								},
+								description:
+									'The key returned by an Upload a File operation. Use this for large files (over 3 MB) that cannot be sent inline.',
+							},
+							{
+								displayName: 'File Name',
+								name: 'filename',
+								type: 'string',
+								default: '',
+								description: 'Optional original file name shown to reviewers',
+							},
+							{
+								displayName: 'Input Binary Field',
+								name: 'binaryProperty',
+								type: 'string',
+								default: 'data',
+								displayOptions: {
+									show: {
+										source: ['upload'],
+									},
+								},
+								hint: 'The name of the input field containing the binary file to attach',
+								description:
+									'The file is sent inline with this request. The whole request is limited to 4.5 MB, so keep inline files under ~3 MB. For larger files, use the Upload a File operation first, then attach with source "Tracira Upload".',
+							},
+							{
+								displayName: 'Source',
+								name: 'source',
+								type: 'options',
+								default: 'upload',
+								options: [
+									{
+										name: 'From URL',
+										value: 'url',
+										description: 'HTTPS URL to a publicly accessible file',
+									},
+									{
+										name: 'Tracira Upload',
+										value: 'uploaded',
+										description:
+											'A key returned by the Upload a File operation — use for files over ~3 MB',
+									},
+									{
+										name: 'Upload File',
+										value: 'upload',
+										description:
+											'Send a binary file inline with this request (keep under ~3 MB)',
+									},
+								],
+								description: 'Where the file comes from',
+							},
+							{
+								displayName: 'URL',
+								name: 'url',
+								type: 'string',
+								default: '',
+								displayOptions: {
+									show: {
+										source: ['url'],
+									},
+								},
+								description: 'HTTPS URL to a publicly accessible image, audio file, or PDF',
+							},
+						],
 					},
 				],
 			},
@@ -575,6 +670,46 @@ export class Tracira implements INodeType {
 					show: logOperationDisplay,
 				},
 				options: [
+					{
+						displayName: 'Action (Gate Mode)',
+						name: 'action',
+						type: 'fixedCollection',
+						default: {},
+						description:
+							'When the AI output proposes an action to run (issue a refund, delete a record), describe it here so a human approves or rejects it before your workflow executes it. Combine with Callback URL.',
+						options: [
+							{
+								displayName: 'Action',
+								name: 'value',
+								values: [
+									{
+										displayName: 'Name',
+										name: 'name',
+										type: 'string',
+										default: '',
+										description: "Machine name of the action, e.g. 'issue_refund' or 'delete_lead'",
+									},
+									{
+										displayName: 'Summary',
+										name: 'summary',
+										type: 'string',
+										default: '',
+										description:
+											"Plain-language description of exactly what will happen, e.g. 'Refund €49.00 to Alice Martin (order #8841)'. Reviewers read this to approve or reject.",
+									},
+									{
+										displayName: 'Parameters (JSON)',
+										name: 'paramsJson',
+										type: 'string',
+										typeOptions: { rows: 3 },
+										default: '',
+										description:
+											'Optional JSON object of the action\'s parameters, e.g. {"amount": 49, "currency": "EUR"}. Shown to reviewers and usable in Tracira data-field rules via paths like action.params.amount.',
+									},
+								],
+							},
+						],
+					},
 					{
 						displayName: 'Actor ID',
 						name: 'actorId',
@@ -923,41 +1058,69 @@ export class Tracira implements INodeType {
 						}
 					}
 
-					const attachmentsParam = this.getNodeParameter(
-						'attachments',
-						itemIndex,
-						{},
-					) as IDataObject;
-					const attachmentRows = (attachmentsParam.attachment as IDataObject[] | undefined) ?? [];
-					const attachments: IDataObject[] = [];
-
-					for (const row of attachmentRows) {
-						if (row.source === 'upload') {
-							const binaryProperty = (row.binaryProperty as string) || 'data';
-							const binary = this.helpers.assertBinaryData(itemIndex, binaryProperty);
-							const buffer = await this.helpers.getBinaryDataBuffer(itemIndex, binaryProperty);
-
-							attachments.push(
-								stripEmpty({
-									source: 'upload',
-									data: buffer.toString('base64'),
-									filename: (row.filename as string) || binary.fileName || 'file',
-								}),
-							);
-							continue;
+					// Proposed action: only sent when a name or summary is filled in.
+					let action: IDataObject | undefined;
+					const actionParam = (options.action as IDataObject | undefined)?.value as
+						| IDataObject
+						| undefined;
+					if (actionParam && (actionParam.name || actionParam.summary)) {
+						let params: IDataObject | undefined;
+						if (actionParam.paramsJson) {
+							try {
+								params = JSON.parse(actionParam.paramsJson as string) as IDataObject;
+							} catch {
+								throw new NodeOperationError(this.getNode(), 'Action Parameters must be valid JSON', {
+									itemIndex,
+								});
+							}
 						}
-
-						const entry = stripEmpty({
-							source: row.source as string | undefined,
-							key: row.key as string | undefined,
-							url: row.url as string | undefined,
-							filename: row.filename as string | undefined,
+						action = stripEmpty({
+							name: actionParam.name as string | undefined,
+							summary: actionParam.summary as string | undefined,
+							params,
 						});
-
-						if (entry.key !== undefined || entry.url !== undefined) {
-							attachments.push(entry);
-						}
 					}
+
+					// Input and output attachments share the same row shape; only the
+					// request field they land in differs.
+					const collectAttachments = async (paramName: string): Promise<IDataObject[]> => {
+						const param = this.getNodeParameter(paramName, itemIndex, {}) as IDataObject;
+						const rows = (param.attachment as IDataObject[] | undefined) ?? [];
+						const collected: IDataObject[] = [];
+
+						for (const row of rows) {
+							if (row.source === 'upload') {
+								const binaryProperty = (row.binaryProperty as string) || 'data';
+								const binary = this.helpers.assertBinaryData(itemIndex, binaryProperty);
+								const buffer = await this.helpers.getBinaryDataBuffer(itemIndex, binaryProperty);
+
+								collected.push(
+									stripEmpty({
+										source: 'upload',
+										data: buffer.toString('base64'),
+										filename: (row.filename as string) || binary.fileName || 'file',
+									}),
+								);
+								continue;
+							}
+
+							const entry = stripEmpty({
+								source: row.source as string | undefined,
+								key: row.key as string | undefined,
+								url: row.url as string | undefined,
+								filename: row.filename as string | undefined,
+							});
+
+							if (entry.key !== undefined || entry.url !== undefined) {
+								collected.push(entry);
+							}
+						}
+
+						return collected;
+					};
+
+					const attachments = await collectAttachments('attachments');
+					const outputAttachments = await collectAttachments('outputAttachments');
 
 					requestOptions = {
 						method: 'POST',
@@ -973,6 +1136,8 @@ export class Tracira implements INodeType {
 							}) as string,
 							model: this.getNodeParameter('modelName', itemIndex, '') as string,
 							attachments: attachments.length ? attachments : undefined,
+							outputAttachments: outputAttachments.length ? outputAttachments : undefined,
+							action,
 							actorId: options.actorId as string | undefined,
 							callbackUrl: options.callbackUrl as string | undefined,
 							callbackEvents: options.callbackEvents as string | undefined,
