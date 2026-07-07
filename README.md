@@ -115,7 +115,7 @@ Maintainer release instructions are documented in [PUBLISHING.md](./PUBLISHING.m
 
 ### How n8n verification handles versions
 
-The verified listing on n8n Cloud is **pinned to one npm version with a tarball checksum** - publishing a new version to npm changes nothing on the n8n side. Each version must be (re)submitted through the [n8n Creator Portal](https://creators.n8n.io/); the previously verified version stays live during review, and self-hosted users installing by npm name get the latest npm version regardless. To see which version n8n currently has verified:
+The verified listing on n8n Cloud is **pinned to one npm version with a tarball checksum** - it does not follow npm's latest automatically. Per n8n's verification team: they **pick up new npm versions themselves**, run a quick review, and include the update in their next release cycle (or reach out with feedback). No Creator Portal resubmission is needed for updates - but **the changes must be transparent in this GitHub repository** (commits, tags, changelog matching the published package), otherwise they cannot verify the version update. The previously verified version stays live during review; self-hosted users installing by npm name get the latest npm version regardless. To see which version n8n currently has verified:
 
 ```bash
 curl -s "https://api.n8n.io/api/community-nodes?filters%5BpackageName%5D%5B%24eq%5D=%40deepidealab%2Fn8n-nodes-tracira" | python3 -m json.tool
