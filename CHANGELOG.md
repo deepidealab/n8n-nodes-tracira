@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.2] - 2026-07-15
+
+### Fixed
+- Tracira Trigger: the webhook `delete` (deactivation) method no longer silently swallows HTTP errors. Failures deregistering the subscription are now wrapped in `NodeApiError`, so the status code and response body surface in the n8n UI (same convention as `checkExists` and `create`). Resolves the n8n verification review finding on 0.9.1.
+
 ## [0.9.1] - 2026-07-07
 
 ### Fixed

@@ -134,8 +134,10 @@ export class TraciraTrigger implements INodeType {
 							'DELETE',
 							`/subscriptions/${webhookData.subscriptionId}`,
 						);
-					} catch {
-						return false;
+					} catch (error) {
+						// Wrap HTTP failures in NodeApiError to keep status code and response body,
+						// consistent with checkExists and create above.
+						throw new NodeApiError(this.getNode(), error as JsonObject);
 					}
 					delete webhookData.subscriptionId;
 				}
