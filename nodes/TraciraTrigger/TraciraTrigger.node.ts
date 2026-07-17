@@ -10,9 +10,6 @@ import type {
 import { NodeApiError, NodeConnectionTypes } from 'n8n-workflow';
 import { traciraApiRequest } from '../Tracira/shared/transport';
 
-// Webhook triggers cannot run as AI-agent tools, and INodeTypeDescription only
-// accepts `usableAsTool: true` - so the lint rule is exempted rather than set.
-// eslint-disable-next-line @n8n/community-nodes/node-usable-as-tool
 export class TraciraTrigger implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Tracira Trigger',
@@ -23,6 +20,10 @@ export class TraciraTrigger implements INodeType {
 		subtitle: 'Watch decisions',
 		description:
 			'Starts the workflow the moment a log gets a verdict or a human decision in Tracira',
+		// A webhook trigger is never actually invoked as an AI-agent tool, but the
+		// scanner lints with `allowInlineConfig: false`, so the rule cannot be
+		// suppressed by a comment and the type only permits `true`.
+		usableAsTool: true,
 		codex: {
 			categories: ['Analytics'],
 			resources: {

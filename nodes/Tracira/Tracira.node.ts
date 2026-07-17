@@ -382,6 +382,7 @@ export class Tracira implements INodeType {
 						displayName: 'From List',
 						name: 'list',
 						type: 'list',
+						default: '',
 						typeOptions: {
 							searchListMethod: 'getProjects',
 							searchable: true,
@@ -391,6 +392,7 @@ export class Tracira implements INodeType {
 						displayName: 'Name',
 						name: 'name',
 						type: 'string',
+						default: '',
 					},
 				],
 			},
@@ -409,6 +411,7 @@ export class Tracira implements INodeType {
 						displayName: 'From List',
 						name: 'list',
 						type: 'list',
+						default: '',
 						typeOptions: {
 							searchListMethod: 'getTasks',
 							searchable: true,
@@ -418,6 +421,7 @@ export class Tracira implements INodeType {
 						displayName: 'Name',
 						name: 'name',
 						type: 'string',
+						default: '',
 					},
 				],
 			},
@@ -831,6 +835,7 @@ export class Tracira implements INodeType {
 						displayName: 'From List',
 						name: 'list',
 						type: 'list',
+						default: '',
 						typeOptions: {
 							searchListMethod: 'getProjects',
 							searchable: true,
@@ -840,6 +845,7 @@ export class Tracira implements INodeType {
 						displayName: 'Name',
 						name: 'name',
 						type: 'string',
+						default: '',
 					},
 				],
 			},
@@ -857,6 +863,7 @@ export class Tracira implements INodeType {
 						displayName: 'From List',
 						name: 'list',
 						type: 'list',
+						default: '',
 						typeOptions: {
 							searchListMethod: 'getTasks',
 							searchable: true,
@@ -866,6 +873,7 @@ export class Tracira implements INodeType {
 						displayName: 'Name',
 						name: 'name',
 						type: 'string',
+						default: '',
 					},
 				],
 			},

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.3] - 2026-07-17
+
+### Fixed
+- All four resourceLocator fields (Project Name, Task Name, and the project/task filters on `Get Many`) now declare `default: ''` on their `list` and `name` mode objects, so each mode initialises consistently. Resolves the `require-param-default` findings on 0.9.2.
+- Tracira Trigger: declares `usableAsTool: true` rather than relying on an ESLint disable comment. The verification scanner lints with `allowInlineConfig: false`, so neither a line-level nor a block-level disable can suppress `node-usable-as-tool`; the property has to be set. A webhook trigger is never actually invoked as an AI-agent tool, and the type only permits `true`.
+
 ## [0.9.2] - 2026-07-15
 
 ### Fixed
