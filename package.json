@@ -33,7 +33,8 @@
     "lint": "n8n-node lint",
     "lint:fix": "n8n-node lint --fix",
     "scan": "npx @n8n/scan-community-package @deepidealab/n8n-nodes-tracira",
-    "verify": "npm run lint && npm run build",
+    "scan:source": "node scripts/scan-source.mjs",
+    "verify": "npm run lint && npm run scan:source && npm run build",
     "prepublishOnly": "node -e \"if (!process.env.GITHUB_ACTIONS) { console.error('Use GitHub Actions to publish this package, or pass --ignore-scripts for the one-time bootstrap publish.'); process.exit(1); }\""
   },
   "files": [
@@ -52,6 +53,7 @@
   },
   "devDependencies": {
     "@n8n/node-cli": "^0.37.3",
+    "@n8n/scan-community-package": "^0.28.1",
     "eslint": "9.32.0",
     "prettier": "3.6.2",
     "release-it": "^19.0.4",

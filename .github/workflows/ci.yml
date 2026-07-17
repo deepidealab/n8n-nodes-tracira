@@ -25,5 +25,8 @@ jobs:
       - name: Run lint
         run: npm run lint
 
+      - name: Run n8n scanner lint (matches the verification review)
+        run: npm run scan:source
+
       - name: Run build
         run: npm run build
