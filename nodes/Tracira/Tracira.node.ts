@@ -60,6 +60,25 @@ const apiCallDisplay = {
 	operation: ['call'],
 };
 
+const instructionsResourceDisplay = {
+	resource: ['instructions'],
+};
+
+const instructionsGetDisplay = {
+	resource: ['instructions'],
+	operation: ['getInstructions'],
+};
+
+const instructionsUpdateDisplay = {
+	resource: ['instructions'],
+	operation: ['updateInstructions'],
+};
+
+const instructionsAnyDisplay = {
+	resource: ['instructions'],
+	operation: ['getInstructions', 'updateInstructions'],
+};
+
 function stripEmpty(data: IDataObject): IDataObject {
 	return Object.fromEntries(
 		Object.entries(data).filter(([, value]) => value !== '' && value !== undefined && value !== null),
@@ -162,6 +181,10 @@ export class Tracira implements INodeType {
 						value: 'log',
 					},
 					{
+						name: 'Instruction',
+						value: 'instructions',
+					},
+					{
 						name: 'API',
 						value: 'api',
 					},
@@ -220,6 +243,144 @@ export class Tracira implements INodeType {
 					},
 				],
 				default: 'log',
+			},
+			{
+				displayName: 'Operation',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				displayOptions: {
+					show: instructionsResourceDisplay,
+				},
+				options: [
+					{
+						name: 'Get Instructions',
+						value: 'getInstructions',
+						action: 'Get instructions',
+						description:
+							'Fetch the current AI instructions (system prompt) stored in Tracira for a project and task. On the very first run, saves the Starter Instructions as version 1 and returns them.',
+					},
+					{
+						name: 'Update Instructions',
+						value: 'updateInstructions',
+						action: 'Update instructions',
+						description:
+							'Save a new version of the AI instructions in Tracira and make it active. Use after a reviewer sends a draft back with feedback.',
+					},
+				],
+				default: 'getInstructions',
+			},
+			{
+				displayName: 'Project Name',
+				name: 'instructionsProject',
+				type: 'resourceLocator',
+				required: true,
+				default: { mode: 'list', value: '' },
+				displayOptions: {
+					show: instructionsAnyDisplay,
+				},
+				description:
+					'Must match the Project Name used in the Create a Log operation so the instructions and the logs belong together',
+				modes: [
+					{
+						displayName: 'From List',
+						name: 'list',
+						type: 'list',
+						default: '',
+						typeOptions: {
+							searchListMethod: 'getProjects',
+							searchable: true,
+						},
+					},
+					{
+						displayName: 'Name',
+						name: 'name',
+						type: 'string',
+						default: '',
+					},
+				],
+			},
+			{
+				displayName: 'Task Name',
+				name: 'instructionsTask',
+				type: 'resourceLocator',
+				required: true,
+				default: { mode: 'list', value: '' },
+				displayOptions: {
+					show: instructionsAnyDisplay,
+				},
+				description: 'Must match the Task Name used in the Create a Log operation',
+				modes: [
+					{
+						displayName: 'From List',
+						name: 'list',
+						type: 'list',
+						default: '',
+						typeOptions: {
+							searchListMethod: 'getTasks',
+							searchable: true,
+						},
+					},
+					{
+						displayName: 'Name',
+						name: 'name',
+						type: 'string',
+						default: '',
+					},
+				],
+			},
+			{
+				displayName: 'Starter Instructions',
+				name: 'starterInstructions',
+				type: 'string',
+				typeOptions: {
+					rows: 6,
+				},
+				default: '',
+				displayOptions: {
+					show: instructionsGetDisplay,
+				},
+				description:
+					'Optional. Used only the very first time this workflow runs: if no instructions exist yet in Tracira for this project and task, this text is saved as version 1 and returned. After that, the instructions stored in Tracira always win.',
+			},
+			{
+				displayName: 'New Instructions',
+				name: 'newInstructions',
+				type: 'string',
+				required: true,
+				typeOptions: {
+					rows: 6,
+				},
+				default: '',
+				displayOptions: {
+					show: instructionsUpdateDisplay,
+				},
+				description:
+					'The full updated instructions text. Typically the output of an AI step that rewrote the current instructions to follow the reviewer feedback. This becomes the new active version.',
+			},
+			{
+				displayName: 'Reviewer Feedback',
+				name: 'teachComment',
+				type: 'string',
+				typeOptions: {
+					rows: 3,
+				},
+				default: '',
+				displayOptions: {
+					show: instructionsUpdateDisplay,
+				},
+				description:
+					'Optional. The reviewer comment that caused this update (map the Comment from the Tracira Trigger). Shown in the Tracira dashboard as the reason this version exists.',
+			},
+			{
+				displayName: 'Log ID',
+				name: 'instructionsLogId',
+				type: 'string',
+				default: '',
+				displayOptions: {
+					show: instructionsUpdateDisplay,
+				},
+				description: 'Optional. The Tracira log the feedback came from (map the Log ID from the Tracira Trigger).',
 			},
 			{
 				displayName: 'Operation',
@@ -753,6 +914,14 @@ export class Tracira implements INodeType {
 						default: 0,
 					},
 					{
+						displayName: 'Instructions Version',
+						name: 'instructionsVersion',
+						type: 'number',
+						default: 0,
+						description:
+							'Optional. The Version returned by the Get Instructions operation. The log then links back to the exact instructions the AI ran with, and reviewers can open them from the log.',
+					},
+					{
 						displayName: 'Latency',
 						name: 'latencyMs',
 						type: 'number',
@@ -1152,6 +1321,7 @@ export class Tracira implements INodeType {
 							confidence: options.confidence as number | undefined,
 							costUsd: options.costUsd as number | undefined,
 							id: options.id as string | undefined,
+							instructionsVersion: (options.instructionsVersion as number | undefined) || undefined,
 							revisionOf: options.revisionOf as string | undefined,
 							latencyMs: options.latencyMs as number | undefined,
 							metadata,
@@ -1159,6 +1329,36 @@ export class Tracira implements INodeType {
 							subjectId: options.subjectId as string | undefined,
 							sync: this.getNodeParameter('sync', itemIndex, true) as boolean,
 							timestamp: options.timestamp as string | undefined,
+						}),
+					};
+				} else if (resource === 'instructions' && operation === 'getInstructions') {
+					requestOptions = {
+						method: 'POST',
+						url: `${baseUrl}/instructions`,
+						body: stripEmpty({
+							project: this.getNodeParameter('instructionsProject', itemIndex, '', {
+								extractValue: true,
+							}) as string,
+							task: this.getNodeParameter('instructionsTask', itemIndex, '', {
+								extractValue: true,
+							}) as string,
+							default: this.getNodeParameter('starterInstructions', itemIndex, '') as string,
+						}),
+					};
+				} else if (resource === 'instructions' && operation === 'updateInstructions') {
+					requestOptions = {
+						method: 'POST',
+						url: `${baseUrl}/instructions/versions`,
+						body: stripEmpty({
+							project: this.getNodeParameter('instructionsProject', itemIndex, '', {
+								extractValue: true,
+							}) as string,
+							task: this.getNodeParameter('instructionsTask', itemIndex, '', {
+								extractValue: true,
+							}) as string,
+							content: this.getNodeParameter('newInstructions', itemIndex) as string,
+							teachComment: this.getNodeParameter('teachComment', itemIndex, '') as string,
+							logId: this.getNodeParameter('instructionsLogId', itemIndex, '') as string,
 						}),
 					};
 				} else if (resource === 'log' && operation === 'get') {
