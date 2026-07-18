@@ -19,7 +19,7 @@ export class TraciraTrigger implements INodeType {
 		version: 1,
 		subtitle: 'Watch decisions',
 		description:
-			'Starts the workflow the moment a log gets a verdict or a human decision in Tracira',
+			'Starts the workflow the moment an output gets a verdict or a human decision in Tracira',
 		// A webhook trigger is never actually invoked as an AI-agent tool, but the
 		// scanner lints with `allowInlineConfig: false`, so the rule cannot be
 		// suppressed by a comment and the type only permits `true`.
@@ -45,7 +45,7 @@ export class TraciraTrigger implements INodeType {
 		},
 		eventTriggerDescription: 'Waiting for a Tracira verdict or decision',
 		activationMessage:
-			'Your workflow will now start when a log gets a verdict or a human decision in Tracira.',
+			'Your workflow will now start when an output gets a verdict or a human decision in Tracira.',
 		inputs: [],
 		outputs: [NodeConnectionTypes.Main],
 		credentials: [
@@ -78,7 +78,7 @@ export class TraciraTrigger implements INodeType {
 					{ name: 'Sent Back for Changes', value: 'changed' },
 				],
 				description:
-					'Which Tracira events start this workflow. The default (approved / rejected / sent back for changes) fires once a human has made a decision - the usual choice for approval flows. Decision events include the AI output and the log metadata, so the workflow can deliver an approved reply directly. No setup is needed in Tracira: activating this workflow registers the trigger automatically.',
+					'Which Tracira events start this workflow. The default (approved / rejected / sent back for changes) fires once a human has made a decision - the usual choice for approval flows. Decision events include the AI output and its metadata, so the workflow can deliver an approved reply directly. No setup is needed in Tracira: activating this workflow registers the trigger automatically.',
 			},
 		],
 	};

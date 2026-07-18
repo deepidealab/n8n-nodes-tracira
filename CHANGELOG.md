@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.11.0] - 2026-07-18
+
+### Changed
+- Renamed all customer-facing display names from "log" vocabulary to "output" vocabulary, matching the Tracira app and the Make custom app: resource `Log` → `Output`, operations `Create a Log` → `Check an Output`, `Get a Log` → `Get an Output`, `Search Logs` → `Search Outputs`, `Flag a Log` → `Flag an Output`, and every `Log ID` field label → `Output ID`. Display names only: internal `resource`/`operation` values and parameter names are unchanged, so existing workflows keep working without edits.
+- README and example workflows updated to the same vocabulary.
+
+## [0.10.0] - 2026-07-18
+
+### Added
+- New `Instruction` resource: `Get Instructions` fetches the active instructions for a project and task (seeding version 1 from Starter Instructions on first run); `Update Instructions` saves a new active version, optionally recording the reviewer comment and the log it came from.
+- The log operation gains an optional `Instructions Version` field linking an output back to the exact instructions the AI ran with.
+
 ## [0.9.3] - 2026-07-17
 
 ### Fixed

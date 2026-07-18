@@ -2,7 +2,7 @@
 
 This is an n8n community node for Tracira.
 
-Tracira monitors AI outputs from your automations, evaluates them against rules, and lets you inspect log results from inside n8n workflows.
+Tracira monitors AI outputs from your automations, evaluates them against rules, and lets you inspect results from inside n8n workflows.
 
 [n8n](https://n8n.io/) is a [fair-code licensed](https://docs.n8n.io/sustainable-use-license/) workflow automation platform.
 
@@ -31,24 +31,24 @@ The package ships two nodes: **Tracira** (actions) and **Tracira Trigger** (watc
 
 ### Tracira Trigger
 
-Starts a workflow the moment a log gets a verdict or a human decision in Tracira. Pick which events to watch - the default (`approved` / `rejected` / `sent back for changes`) fires once a human has decided, the usual choice for approval flows; `flagged`, `passed`, and `error` evaluation events are opt-in. Activating the workflow registers the trigger with Tracira automatically (visible under Integrations → Connected triggers); deactivating removes it. Decision events include the AI `output` and the log `metadata`, so an approval workflow can deliver the approved reply with no extra lookup.
+Starts a workflow the moment an output gets a verdict or a human decision in Tracira. Pick which events to watch - the default (`approved` / `rejected` / `sent back for changes`) fires once a human has decided, the usual choice for approval flows; `flagged`, `passed`, and `error` evaluation events are opt-in. Activating the workflow registers the trigger with Tracira automatically (visible under Integrations → Connected triggers); deactivating removes it. Decision events include the AI `output` and its `metadata`, so an approval workflow can deliver the approved reply with no extra lookup.
 
-The typical human-in-the-loop pattern uses two workflows: workflow A creates the log (AI step → `Create a Log`, Wait for Verdict off), and workflow B starts with the Tracira Trigger, filters on `decision = approved`, and delivers the output.
+The typical human-in-the-loop pattern uses two workflows: workflow A submits the output (AI step → `Check an Output`, Wait for Verdict off), and workflow B starts with the Tracira Trigger, filters on `decision = approved`, and delivers the output.
 
 ### Tracira (actions)
 
-The node supports the `Log` resource with these operations (named to match the Tracira Make app modules):
+The node supports the `Output` resource with these operations (named to match the Tracira Make app modules):
 
-- `Create a Log`: Send an AI output to Tracira and create a log for evaluation. Waits for the verdict by default; supports async (fire-and-forget) mode, callback URL with event filtering, and all standard context fields. `Project Name` and `Task Name` offer a searchable dropdown of your existing Tracira projects/tasks, or accept a new name typed manually.
-- `Get a Log`: Fetch a single log by ID.
-- `Search Logs`: List logs with filters such as status, project, task, and date range.
-- `Set a Decision`: `Approve` or `Reject` a flagged log, or `Send Back for Changes` with a comment. The comment is delivered to the downstream automation, which regenerates the output and resubmits it with the `Create a Log` operation's `Revision Of` field set to the original log ID — forming a revision chain.
-- `Flag a Log`: Flag an evaluated log for human review — for example when an end-user reports an issue with an AI response. The log re-enters the pending-review queue and notification channels fire.
-- `Upload a File`: Upload a large file (PDF, image, audio) directly to Tracira storage and get back a `key`. Use it for files over ~3 MB that exceed the request size limit; map a binary field (e.g. `data`). Supports up to 32 MB. Pass the returned `key` to the `Create a Log` operation's `Input Attachments` or `Output Attachments` field.
+- `Check an Output`: Send an AI output to Tracira and have it checked against your rules. Waits for the verdict by default; supports async (fire-and-forget) mode, callback URL with event filtering, and all standard context fields. `Project Name` and `Task Name` offer a searchable dropdown of your existing Tracira projects/tasks, or accept a new name typed manually.
+- `Get an Output`: Fetch a single output by ID.
+- `Search Outputs`: List outputs with filters such as status, project, task, and date range.
+- `Set a Decision`: `Approve` or `Reject` a flagged output, or `Send Back for Changes` with a comment. The comment is delivered to the downstream automation, which regenerates the output and resubmits it with the `Check an Output` operation's `Revision Of` field set to the original output ID, forming a revision chain.
+- `Flag an Output`: Flag an already-checked output for human review, for example when an end-user reports an issue with an AI response. The output re-enters the pending-review queue and notification channels fire.
+- `Upload a File`: Upload a large file (PDF, image, audio) directly to Tracira storage and get back a `key`. Use it for files over ~3 MB that exceed the request size limit; map a binary field (e.g. `data`). Supports up to 32 MB. Pass the returned `key` to the `Check an Output` operation's `Input Attachments` or `Output Attachments` field.
 
-The `Create a Log` operation also has `Input Attachments` (files the AI received) and `Output Attachments` (media the AI produced: generated images, synthesized audio, rendered documents) fields, each with three sources: `Upload File` (send a binary field inline with the request — keep under ~3 MB), `From URL` (a publicly accessible HTTPS URL), or `Tracira Upload` (a `key` from the `Upload a File` operation, for large files). `AI Output` text is required unless an `Output Attachment` carries a media-only output.
+The `Check an Output` operation also has `Input Attachments` (files the AI received) and `Output Attachments` (media the AI produced: generated images, synthesized audio, rendered documents) fields, each with three sources: `Upload File` (send a binary field inline with the request — keep under ~3 MB), `From URL` (a publicly accessible HTTPS URL), or `Tracira Upload` (a `key` from the `Upload a File` operation, for large files). `AI Output` text is required unless an `Output Attachment` carries a media-only output.
 
-The `Create a Log` operation's optional `Action (Gate Mode)` field gates a **proposed action** on human review. When your AI decides to run something with side effects (issue a refund, delete a record), fill in the action's `Name`, a plain-language `Summary`, and optional `Parameters (JSON)`. Reviewers approve or reject the action in Tracira before your workflow executes it, and data-field rules can gate it via paths like `action.params.amount`. Combine with a `Callback URL` so the workflow runs the action only after approval.
+The `Check an Output` operation's optional `Action (Gate Mode)` field gates a **proposed action** on human review. When your AI decides to run something with side effects (issue a refund, delete a record), fill in the action's `Name`, a plain-language `Summary`, and optional `Parameters (JSON)`. Reviewers approve or reject the action in Tracira before your workflow executes it, and data-field rules can gate it via paths like `action.params.amount`. Combine with a `Callback URL` so the workflow runs the action only after approval.
 
 The node also supports the `API` resource with:
 
@@ -56,7 +56,7 @@ The node also supports the `API` resource with:
 
 ### Sync vs async
 
-By default the `Create a Log` operation **waits for the verdict** (`Wait for Verdict` is on): Tracira evaluates inline and responds with the full `{ ok, id, status, verdict, confidenceScore, explanation }` so you can branch on `status` or `verdict` in the same workflow execution. Evaluation is capped at 30 seconds.
+By default the `Check an Output` operation **waits for the verdict** (`Wait for Verdict` is on): Tracira evaluates inline and responds with the full `{ ok, id, status, verdict, confidenceScore, explanation }` so you can branch on `status` or `verdict` in the same workflow execution. Evaluation is capped at 30 seconds.
 
 Turn **Wait for Verdict** off for fire-and-forget logging: Tracira responds immediately with HTTP `202` and `{ ok, id, status: "pending" }`, then evaluates in the background. Use this for high-volume logging where you don't need the verdict inline.
 
@@ -86,9 +86,9 @@ This package is being set up against the current n8n community-node tooling and 
 Typical pattern:
 
 1. Run your AI step in n8n.
-2. Send the model output to `Tracira -> Log -> Create a Log`.
+2. Send the model output to `Tracira -> Output -> Check an Output`.
 3. Branch on the returned `status`, `verdict`, or `confidenceScore`.
-4. Optionally query historic logs with `Get a Log` or `Search Logs`.
+4. Optionally query past outputs with `Get an Output` or `Search Outputs`.
 
 ## Example workflow
 
@@ -97,7 +97,7 @@ An importable example workflow is available at [examples/log-and-branch.workflow
 The example does this:
 
 1. Starts from a manual trigger.
-2. Logs an execution to Tracira.
+2. Submits an output to Tracira.
 3. Branches with an `If` node based on the returned `status`.
 
 ## Verification notes
@@ -133,7 +133,7 @@ Every node class in this package must follow the conventions that got the existi
 4. **`usableAsTool`**: set `true` on every node class, triggers included. Do NOT try to exempt the `node-usable-as-tool` rule with an eslint-disable comment: the verification scanner lints with `allowInlineConfig: false`, so disable comments are ignored and the package fails review (0.9.2 review finding). A trigger is never actually invoked as a tool, so the property is inert there, and the type only permits `true`.
 5. **Trigger nodes**: name them `<X> Trigger` / `<x>Trigger`, add `activationMessage` and `eventTriggerDescription`, keep the registration id in `getWorkflowStaticData('node')`, and make `checkExists` verify against the API (Tracira auto-prunes dead subscriptions, so a stale local id must re-register).
 6. **Register the node** in `package.json` → `n8n.nodes` (the `dist/...js` path) - the build does not do this for you.
-7. **Field naming and order**: manager-friendly labels matching the Make custom app ("Input Text", "Input Attachments", "AI Output", "Output Attachments"), ordered as the story of the log: project/task → what the AI received → what it produced → behaviour. Renaming a `displayName` is free; **never rename a parameter `name`** - that breaks existing workflows.
+7. **Field naming and order**: manager-friendly labels matching the Make custom app ("Input Text", "Input Attachments", "AI Output", "Output Attachments"), ordered as the story of the output: project/task → what the AI received → what it produced → behaviour. Renaming a `displayName` is free; **never rename a parameter `name`** - that breaks existing workflows.
 8. **Add a `default`** to every parameter object the scanner can see - including each mode object inside a resourceLocator's `modes` array (`default: ''` on the `list` and `name` modes; 0.9.2 review finding).
 9. **Verify locally** with `npm run verify` (lint + scanner ESLint + build; needs Node 22+). `npm run scan:source` alone reproduces the verification scanner's ESLint pass against the working tree - `npm run lint` does NOT match it (see PUBLISHING.md). The full published-package scan runs in CI post-publish.
 

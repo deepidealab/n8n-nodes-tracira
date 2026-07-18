@@ -59,7 +59,7 @@
         }
       },
       "id": "tracira-create-log",
-      "name": "Create a Log",
+      "name": "Check an Output",
       "type": "@deepidealab/n8n-nodes-tracira.tracira",
       "typeVersion": 1,
       "position": [480, 340],
@@ -77,7 +77,7 @@
         "logId": "={{ $json.id }}"
       },
       "id": "tracira-get-log",
-      "name": "Get a Log",
+      "name": "Get an Output",
       "type": "@deepidealab/n8n-nodes-tracira.tracira",
       "typeVersion": 1,
       "position": [700, 340],
@@ -96,7 +96,7 @@
         "flagReason": "Demo: end-user reported the reply referenced the wrong shipping date."
       },
       "id": "tracira-flag-log",
-      "name": "Flag a Log",
+      "name": "Flag an Output",
       "type": "@deepidealab/n8n-nodes-tracira.tracira",
       "typeVersion": 1,
       "position": [920, 340],
@@ -138,7 +138,7 @@
         "limit": 10
       },
       "id": "tracira-search-logs",
-      "name": "Search Logs",
+      "name": "Search Outputs",
       "type": "@deepidealab/n8n-nodes-tracira.tracira",
       "typeVersion": 1,
       "position": [1360, 340],
@@ -215,36 +215,36 @@
       "main": [
         [
           {
-            "node": "Create a Log",
+            "node": "Check an Output",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Create a Log": {
+    "Check an Output": {
       "main": [
         [
           {
-            "node": "Get a Log",
+            "node": "Get an Output",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Get a Log": {
+    "Get an Output": {
       "main": [
         [
           {
-            "node": "Flag a Log",
+            "node": "Flag an Output",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Flag a Log": {
+    "Flag an Output": {
       "main": [
         [
           {
@@ -259,7 +259,7 @@
       "main": [
         [
           {
-            "node": "Search Logs",
+            "node": "Search Outputs",
             "type": "main",
             "index": 0
           }

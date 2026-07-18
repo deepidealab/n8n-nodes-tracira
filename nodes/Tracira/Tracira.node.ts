@@ -140,7 +140,7 @@ export class Tracira implements INodeType {
 		group: ['transform'],
 		version: 1,
 		subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
-		description: 'Log and inspect Tracira AI log data',
+		description: 'Check and inspect your AI outputs in Tracira',
 		usableAsTool: true,
 		codex: {
 			categories: ['Analytics'],
@@ -177,7 +177,7 @@ export class Tracira implements INodeType {
 				noDataExpression: true,
 				options: [
 					{
-						name: 'Log',
+						name: 'Output',
 						value: 'log',
 					},
 					{
@@ -201,45 +201,45 @@ export class Tracira implements INodeType {
 				},
 				options: [
 					{
-						name: 'Create a Log',
+						name: 'Check an Output',
 						value: 'log',
-						action: 'Create a log',
+						action: 'Check an output',
 						description:
-							'Send an AI output to Tracira and create a log for evaluation. Returns a verdict, confidence score, and explanation based on your configured rules.',
+							'Send an AI output to Tracira and have it checked against your rules. Returns a verdict, confidence score, and explanation based on your configured rules.',
 					},
 					{
-						name: 'Flag a Log',
+						name: 'Flag an Output',
 						value: 'flag',
-						action: 'Flag a log',
-						description: 'Flag an evaluated log for human review, e.g. when an end-user reports an issue',
+						action: 'Flag an output',
+						description: 'Flag an already-checked output for human review, e.g. when an end-user reports an issue',
 					},
 					{
-						name: 'Get a Log',
+						name: 'Get an Output',
 						value: 'get',
-						action: 'Get a log',
+						action: 'Get an output',
 						description:
-							'Fetch a single log by ID, including verdict, explanation, and human decision',
+							'Fetch a single output by ID, including verdict, explanation, and human decision',
 					},
 					{
-						name: 'Search Logs',
+						name: 'Search Outputs',
 						value: 'search',
-						action: 'Search logs',
+						action: 'Search outputs',
 						description:
-							'Return a filtered list of logs from Tracira. Filter by status, project, task name, or date range.',
+							'Return a filtered list of outputs from Tracira. Filter by status, project, task name, or date range.',
 					},
 					{
 						name: 'Set a Decision',
 						value: 'setDecision',
 						action: 'Set a decision',
 						description:
-							'Approve, reject, or send a flagged log back to the AI with a comment',
+							'Approve, reject, or send a flagged output back to the AI with a comment',
 					},
 					{
 						name: 'Upload a File',
 						value: 'upload',
 						action: 'Upload a file',
 						description:
-							'Upload a large file directly to Tracira storage, then attach it to a log by key',
+							'Upload a large file directly to Tracira storage, then attach it to an output by key',
 					},
 				],
 				default: 'log',
@@ -280,7 +280,7 @@ export class Tracira implements INodeType {
 					show: instructionsAnyDisplay,
 				},
 				description:
-					'Must match the Project Name used in the Create a Log operation so the instructions and the logs belong together',
+					'Must match the Project Name used in the Check an Output operation so the instructions and the outputs belong together',
 				modes: [
 					{
 						displayName: 'From List',
@@ -309,7 +309,7 @@ export class Tracira implements INodeType {
 				displayOptions: {
 					show: instructionsAnyDisplay,
 				},
-				description: 'Must match the Task Name used in the Create a Log operation',
+				description: 'Must match the Task Name used in the Check an Output operation',
 				modes: [
 					{
 						displayName: 'From List',
@@ -373,14 +373,14 @@ export class Tracira implements INodeType {
 					'Optional. The reviewer comment that caused this update (map the Comment from the Tracira Trigger). Shown in the Tracira dashboard as the reason this version exists.',
 			},
 			{
-				displayName: 'Log ID',
+				displayName: 'Output ID',
 				name: 'instructionsLogId',
 				type: 'string',
 				default: '',
 				displayOptions: {
 					show: instructionsUpdateDisplay,
 				},
-				description: 'Optional. The Tracira log the feedback came from (map the Log ID from the Tracira Trigger).',
+				description: 'Optional. The Tracira output the feedback came from (map the Output ID from the Tracira Trigger).',
 			},
 			{
 				displayName: 'Operation',
@@ -401,7 +401,7 @@ export class Tracira implements INodeType {
 				default: 'call',
 			},
 			{
-				displayName: 'Log ID',
+				displayName: 'Output ID',
 				name: 'logId',
 				type: 'string',
 				required: true,
@@ -409,10 +409,10 @@ export class Tracira implements INodeType {
 				displayOptions: {
 					show: getDisplay,
 				},
-				description: 'The log ID to fetch',
+				description: 'The output ID to fetch',
 			},
 			{
-				displayName: 'Log ID',
+				displayName: 'Output ID',
 				name: 'decisionLogId',
 				type: 'string',
 				required: true,
@@ -420,7 +420,7 @@ export class Tracira implements INodeType {
 				displayOptions: {
 					show: setDecisionDisplay,
 				},
-				description: 'The log ID to approve or reject',
+				description: 'The output ID to approve or reject',
 			},
 			{
 				displayName: 'Decision',
@@ -443,11 +443,11 @@ export class Tracira implements INodeType {
 					{
 						name: 'Send Back for Changes',
 						value: 'changed',
-						description: 'Send the log back to the AI with a comment to regenerate',
+						description: 'Send the output back to the AI with a comment to regenerate',
 					},
 				],
 				description:
-					'Approve or reject the flagged log, or send it back to the AI with a comment',
+					'Approve or reject the flagged output, or send it back to the AI with a comment',
 			},
 			{
 				displayName: 'Comment',
@@ -465,10 +465,10 @@ export class Tracira implements INodeType {
 					},
 				},
 				description:
-					'The instruction sent back to the AI describing what to change. Required when Decision is Send Back for Changes. The AI should regenerate the output and resubmit it with the Create a Log operation, setting Revision Of to this log ID.',
+					'The instruction sent back to the AI describing what to change. Required when Decision is Send Back for Changes. The AI should regenerate the output and resubmit it with the Check an Output operation, setting Revision Of to this output ID.',
 			},
 			{
-				displayName: 'Log ID',
+				displayName: 'Output ID',
 				name: 'flagLogId',
 				type: 'string',
 				required: true,
@@ -476,7 +476,7 @@ export class Tracira implements INodeType {
 				displayOptions: {
 					show: flagDisplay,
 				},
-				description: 'The log ID to flag for review',
+				description: 'The output ID to flag for review',
 			},
 			{
 				displayName: 'Reason',
@@ -490,7 +490,7 @@ export class Tracira implements INodeType {
 					show: flagDisplay,
 				},
 				description:
-					'Optional reason for flagging, stored as the log explanation, for example the message your end-user submitted when reporting the issue',
+					'Optional reason for flagging, stored as the output explanation, for example the message your end-user submitted when reporting the issue',
 			},
 			{
 				displayName: 'Input Binary Field',
@@ -597,7 +597,7 @@ export class Tracira implements INodeType {
 				displayOptions: {
 					show: logOperationDisplay,
 				},
-				description: "Optional. The text the AI received: the user's message or the prompt. Shown on the person's side of the log.",
+				description: "Optional. The text the AI received: the user's message or the prompt. Shown on the person's side of the conversation.",
 			},
 			{
 				displayName: 'Input Attachments',
@@ -721,7 +721,7 @@ export class Tracira implements INodeType {
 					show: logOperationDisplay,
 				},
 				description:
-					"Files the AI produced: generated images, synthesized audio, or rendered documents. Same options as Input Attachments; shown as the AI's reply in the log.",
+					"Files the AI produced: generated images, synthesized audio, or rendered documents. Same options as Input Attachments; shown as the AI's reply in the conversation.",
 				options: [
 					{
 						name: 'attachment',
@@ -919,7 +919,7 @@ export class Tracira implements INodeType {
 						type: 'number',
 						default: 0,
 						description:
-							'Optional. The Version returned by the Get Instructions operation. The log then links back to the exact instructions the AI ran with, and reviewers can open them from the log.',
+							'Optional. The Version returned by the Get Instructions operation. The output then links back to the exact instructions the AI ran with, and reviewers can open them from the output.',
 					},
 					{
 						displayName: 'Latency',
@@ -929,12 +929,6 @@ export class Tracira implements INodeType {
 						description: 'Duration of the AI call in milliseconds',
 					},
 					{
-						displayName: 'Log ID',
-						name: 'id',
-						type: 'string',
-						default: '',
-					},
-					{
 						displayName: 'Metadata JSON',
 						name: 'metadataJson',
 						type: 'string',
@@ -942,7 +936,13 @@ export class Tracira implements INodeType {
 							rows: 4,
 						},
 						default: '',
-						description: 'Optional JSON object to store as log metadata',
+						description: 'Optional JSON object to store as output metadata',
+					},
+					{
+						displayName: 'Output ID',
+						name: 'id',
+						type: 'string',
+						default: '',
 					},
 					{
 						displayName: 'Revision Of',
@@ -950,7 +950,7 @@ export class Tracira implements INodeType {
 						type: 'string',
 						default: '',
 						description:
-							'The original log ID when this output is a regeneration triggered by a Changed decision. Tracira links the two as a revision chain so reviewers see every attempt.',
+							'The original output ID when this submission is a regeneration triggered by a Changed decision. Tracira links the two as a revision chain so reviewers see every attempt.',
 					},
 					{
 						displayName: 'Session ID',
@@ -969,7 +969,7 @@ export class Tracira implements INodeType {
 						name: 'timestamp',
 						type: 'dateTime',
 						default: '',
-						description: 'Optional. Override the log timestamp — useful when replaying or reprocessing past executions. Leave blank to use the current time.',
+						description: 'Optional. Override the output timestamp: useful when replaying or reprocessing past executions. Leave blank to use the current time.',
 					},
 				],
 			},
@@ -988,7 +988,7 @@ export class Tracira implements INodeType {
 					{ name: 'Pass', value: 'pass' },
 					{ name: 'Pending', value: 'pending' },
 				],
-				description: 'Filter logs by status',
+				description: 'Filter outputs by status',
 			},
 			{
 				displayName: 'Project Name',
@@ -998,7 +998,7 @@ export class Tracira implements INodeType {
 				displayOptions: {
 					show: getAllDisplay,
 				},
-				description: 'Optional. Filter logs to a specific project name.',
+				description: 'Optional. Filter outputs to a specific project name.',
 				modes: [
 					{
 						displayName: 'From List',
@@ -1026,7 +1026,7 @@ export class Tracira implements INodeType {
 				displayOptions: {
 					show: getAllDisplay,
 				},
-				description: 'Optional. Filter logs to a specific task name within a project.',
+				description: 'Optional. Filter outputs to a specific task name within a project.',
 				modes: [
 					{
 						displayName: 'From List',
@@ -1064,7 +1064,7 @@ export class Tracira implements INodeType {
 				displayOptions: {
 					show: getAllDisplay,
 				},
-				description: 'Only include logs at or after this date',
+				description: 'Only include outputs at or after this date',
 			},
 			{
 				displayName: 'To Date',
@@ -1074,7 +1074,7 @@ export class Tracira implements INodeType {
 				displayOptions: {
 					show: getAllDisplay,
 				},
-				description: 'Only include logs up to this date',
+				description: 'Only include outputs up to this date',
 			},
 			{
 				displayName: 'Limit',
