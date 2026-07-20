@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.12.0] - 2026-07-20
+
+### Added
+- `Set a Decision` gains **Take Over** (`handled`): a human handled the output outside Tracira. The task is done and the AI output went unused. It deliberately records no teaching signal, because taking over is a routing choice, not a judgement that the AI was wrong.
+- `Set a Decision` → **Edit** now asks *how*: send **the corrected version** (`correctedOutput`) and the workflow acts on it with nothing regenerated, or **ask the AI to redo it** (`comment`) for the previous regenerate-and-resubmit flow. Exactly one is sent.
+- Tracira Trigger: new **Taken Over by a Human** event, and decision payloads carry `correctedOutput` (the reviewer's version) and `aiOutput` (what the AI first produced).
+
+### Changed
+- `Send Back for Changes` is now **Edit**, on both the decision option and the trigger event, matching the Tracira app. The underlying `changed` value is unchanged, so existing workflows keep working without edits.
+- When a reviewer edits an output, the trigger's `output` field carries their corrected version rather than the AI's original. A workflow that maps `output` needs no changes and will no longer deliver a version a human replaced.
+
+### Compatibility
+- Existing workflows keep working untouched. The `changed` value is unchanged, and the new **How** field defaults to `Ask the AI to Redo It` precisely so a workflow saved before this release - which has no value for the field and supplies the default - still reads its `Comment` and behaves exactly as it did. The default is compatibility, not a recommendation: prefer sending the corrected version when you have it.
+
 ## [0.11.0] - 2026-07-18
 
 ### Changed

@@ -232,7 +232,7 @@ export class Tracira implements INodeType {
 						value: 'setDecision',
 						action: 'Set a decision',
 						description:
-							'Approve, reject, or send a flagged output back to the AI with a comment',
+							'Approve or reject an output, edit it, or record that a human took over',
 					},
 					{
 						name: 'Upload a File',
@@ -441,13 +441,71 @@ export class Tracira implements INodeType {
 						value: 'rejected',
 					},
 					{
-						name: 'Send Back for Changes',
+						name: 'Edit',
 						value: 'changed',
-						description: 'Send the output back to the AI with a comment to regenerate',
+						description:
+							'The output was wrong. Send the corrected version, or a comment asking the AI to redo it.',
+					},
+					{
+						name: 'Take Over',
+						value: 'handled',
+						description:
+							'A human handled this outside Tracira. The task is done and the AI output went unused. Records no teaching signal.',
 					},
 				],
 				description:
-					'Approve or reject the flagged output, or send it back to the AI with a comment',
+					'Approve or reject the output, edit it, or record that a human took over. Reject always means the workflow does not proceed - it never means "do the opposite"; to reverse a call the AI made, use Edit with the corrected value.',
+			},
+			{
+				displayName: 'How',
+				name: 'editMode',
+				type: 'options',
+				required: true,
+				// Defaults to 'redo' for backward compatibility, NOT because it is the
+				// better path. A workflow saved before this field existed has no value
+				// for it, so n8n supplies this default; 'corrected' would make those
+				// workflows ignore their comment and fail on an empty Corrected Output.
+				default: 'redo',
+				displayOptions: {
+					show: {
+						...setDecisionDisplay,
+						decision: ['changed'],
+					},
+				},
+				options: [
+					{
+						name: 'I Have the Corrected Version',
+						value: 'corrected',
+						description:
+							'Send the fixed output. Nothing is regenerated, so there is no second review round.',
+					},
+					{
+						name: 'Ask the AI to Redo It',
+						value: 'redo',
+						description: 'Send an instruction back to the AI so it can rewrite the output',
+					},
+				],
+				description:
+					'Send the corrected version when you already know the right answer: it is the faster path and teaches Tracira more. Ask the AI to redo it when the output needs rewriting rather than fixing.',
+			},
+			{
+				displayName: 'Corrected Output',
+				name: 'correctedOutput',
+				type: 'string',
+				typeOptions: {
+					rows: 4,
+				},
+				required: true,
+				default: '',
+				displayOptions: {
+					show: {
+						...setDecisionDisplay,
+						decision: ['changed'],
+						editMode: ['corrected'],
+					},
+				},
+				description:
+					'The corrected version of the output, in the same shape the workflow submitted (plain text, or the same JSON fields). The workflow acts on this version. It arrives on the Tracira Trigger as both output and correctedOutput.',
 			},
 			{
 				displayName: 'Comment',
@@ -462,10 +520,11 @@ export class Tracira implements INodeType {
 					show: {
 						...setDecisionDisplay,
 						decision: ['changed'],
+						editMode: ['redo'],
 					},
 				},
 				description:
-					'The instruction sent back to the AI describing what to change. Required when Decision is Send Back for Changes. The AI should regenerate the output and resubmit it with the Check an Output operation, setting Revision Of to this output ID.',
+					'The instruction sent back to the AI describing what to change. The AI should regenerate the output and resubmit it with the Check an Output operation, setting Revision Of to this output ID.',
 			},
 			{
 				displayName: 'Output ID',
@@ -1395,15 +1454,32 @@ export class Tracira implements INodeType {
 				} else if (resource === 'log' && operation === 'setDecision') {
 					const logId = this.getNodeParameter('decisionLogId', itemIndex) as string;
 					const decision = this.getNodeParameter('decision', itemIndex) as string;
-					const comment =
+					// An Edit is either the reviewer's own fix or an instruction to redo it,
+					// never both: a corrected output means there is nothing to ask the AI for.
+					const editMode =
 						decision === 'changed'
+							? (this.getNodeParameter('editMode', itemIndex, 'redo') as string)
+							: '';
+					const comment =
+						editMode === 'redo'
 							? (this.getNodeParameter('comment', itemIndex, '') as string)
 							: '';
+					const correctedOutput =
+						editMode === 'corrected'
+							? (this.getNodeParameter('correctedOutput', itemIndex, '') as string)
+							: '';
 
-					if (decision === 'changed' && !comment.trim()) {
+					if (editMode === 'redo' && !comment.trim()) {
 						throw new NodeOperationError(
 							this.getNode(),
-							'Comment is required when Decision is Send Back for Changes',
+							'Comment is required when you ask the AI to redo the output',
+							{ itemIndex },
+						);
+					}
+					if (editMode === 'corrected' && !correctedOutput.trim()) {
+						throw new NodeOperationError(
+							this.getNode(),
+							'Corrected Output is required when you send the corrected version',
 							{ itemIndex },
 						);
 					}
@@ -1414,6 +1490,7 @@ export class Tracira implements INodeType {
 						body: stripEmpty({
 							decision,
 							comment: comment || undefined,
+							correctedOutput: correctedOutput || undefined,
 						}),
 					};
 				} else if (resource === 'log' && operation === 'flag') {

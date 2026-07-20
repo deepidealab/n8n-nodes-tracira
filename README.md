@@ -31,7 +31,7 @@ The package ships two nodes: **Tracira** (actions) and **Tracira Trigger** (watc
 
 ### Tracira Trigger
 
-Starts a workflow the moment an output gets a verdict or a human decision in Tracira. Pick which events to watch - the default (`approved` / `rejected` / `sent back for changes`) fires once a human has decided, the usual choice for approval flows; `flagged`, `passed`, and `error` evaluation events are opt-in. Activating the workflow registers the trigger with Tracira automatically (visible under Integrations → Connected triggers); deactivating removes it. Decision events include the AI `output` and its `metadata`, so an approval workflow can deliver the approved reply with no extra lookup.
+Starts a workflow the moment an output gets a verdict or a human decision in Tracira. Pick which events to watch - the default (`approved` / `rejected` / `edited`) fires once a human has decided, the usual choice for approval flows; `flagged`, `passed`, and `error` evaluation events are opt-in. Activating the workflow registers the trigger with Tracira automatically (visible under Integrations → Connected triggers); deactivating removes it. Decision events include the AI `output` and its `metadata`, so an approval workflow can deliver the approved reply with no extra lookup. When a reviewer edits an output, `output` already carries their corrected version, so a workflow that maps `output` needs no changes: it delivers what the human approved, never the version they replaced. `correctedOutput` and `aiOutput` are there when you need to tell the cases apart.
 
 The typical human-in-the-loop pattern uses two workflows: workflow A submits the output (AI step → `Check an Output`, Wait for Verdict off), and workflow B starts with the Tracira Trigger, filters on `decision = approved`, and delivers the output.
 
@@ -42,7 +42,11 @@ The node supports the `Output` resource with these operations (named to match th
 - `Check an Output`: Send an AI output to Tracira and have it checked against your rules. Waits for the verdict by default; supports async (fire-and-forget) mode, callback URL with event filtering, and all standard context fields. `Project Name` and `Task Name` offer a searchable dropdown of your existing Tracira projects/tasks, or accept a new name typed manually.
 - `Get an Output`: Fetch a single output by ID.
 - `Search Outputs`: List outputs with filters such as status, project, task, and date range.
-- `Set a Decision`: `Approve` or `Reject` a flagged output, or `Send Back for Changes` with a comment. The comment is delivered to the downstream automation, which regenerates the output and resubmits it with the `Check an Output` operation's `Revision Of` field set to the original output ID, forming a revision chain.
+- `Set a Decision`: record a human decision on an output.
+  - `Approve` - the workflow proceeds with the output as it stands.
+  - `Edit` - the output was wrong. Either send the corrected version (`I Have the Corrected Version`), which the workflow acts on with nothing regenerated, or a comment (`Ask the AI to Redo It`), which is delivered to the downstream automation so it regenerates the output and resubmits it with the `Check an Output` operation's `Revision Of` field set to the original output ID, forming a revision chain.
+  - `Reject` - the workflow does not proceed. Always inaction: it never means "do the opposite". To reverse a call the AI made, use `Edit` with the corrected value.
+  - `Take Over` - a human handled it outside Tracira. The task is done and the AI output went unused. Records no teaching signal, because taking over is not a judgement that the AI was wrong.
 - `Flag an Output`: Flag an already-checked output for human review, for example when an end-user reports an issue with an AI response. The output re-enters the pending-review queue and notification channels fire.
 - `Upload a File`: Upload a large file (PDF, image, audio) directly to Tracira storage and get back a `key`. Use it for files over ~3 MB that exceed the request size limit; map a binary field (e.g. `data`). Supports up to 32 MB. Pass the returned `key` to the `Check an Output` operation's `Input Attachments` or `Output Attachments` field.
 
