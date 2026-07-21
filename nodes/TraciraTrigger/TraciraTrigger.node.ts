@@ -77,6 +77,7 @@ export class TraciraTrigger implements INodeType {
 					{ name: 'Passed All Rules', value: 'pass' },
 					{ name: 'Rejected by a Human', value: 'rejected' },
 					{ name: 'Taken Over by a Human', value: 'handled' },
+					{ name: 'Taught After the Fact', value: 'taught' },
 				],
 				description:
 					'Which Tracira events start this workflow. The default (approved / rejected / edited) fires once a human has made a decision - the usual choice for approval flows. Decision events include the AI output and its metadata, so the workflow can deliver an approved reply directly. When a reviewer edits an output, output already carries their corrected version, so a workflow that maps output needs no changes; correctedOutput and aiOutput let you tell the cases apart. No setup is needed in Tracira: activating this workflow registers the trigger automatically.',

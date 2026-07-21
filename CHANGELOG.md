@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.13.1] - 2026-07-21
+
+### Added
+- Tracira Trigger: new **Taught After the Fact** (`taught`) opt-in event. It fires when a reviewer teaches the AI after an output already went out (approved, rejected, or auto-passed); it never resumes a paused workflow, it only informs subscribed automations of the new feedback. The event was already emitted by Tracira but could not be selected here. README updated to document it.
+
+## [0.13.0] - 2026-07-20
+
+### Changed
+- One **After Check** choice, JSON output, action-only logs.
+
 ## [0.12.2] - 2026-07-21
 
 ### Changed
