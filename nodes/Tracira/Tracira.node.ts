@@ -765,7 +765,7 @@ export class Tracira implements INodeType {
 					show: logOperationDisplay,
 				},
 				description:
-					'The AI-generated text to evaluate against your Tracira rules. Required unless you add an Output Attachment (media-only outputs, e.g. a generated image).',
+					'What the AI produced, checked against your rules. Plain text or JSON: with JSON, rules can target individual fields. Optional if you add an Output Attachment.',
 			},
 			{
 				displayName: 'Output Attachments',
@@ -874,15 +874,96 @@ export class Tracira implements INodeType {
 					'Optional. The name of the AI model that produced this output, exactly as you use it — e.g. "gpt-4o", "claude-sonnet-4-5".',
 			},
 			{
-				displayName: 'Wait for Verdict',
-				name: 'sync',
-				type: 'boolean',
-				default: true,
+				displayName: 'After Check',
+				name: 'mode',
+				type: 'options',
+				default: 'verdict',
 				displayOptions: {
 					show: logOperationDisplay,
 				},
+				options: [
+					{
+						name: 'Wait for the Verdict',
+						value: 'verdict',
+						description:
+							'Wait for the result and return status, verdict and confidence so you can branch on it (capped at 30s)',
+					},
+					{
+						name: 'Do Not Wait, Just Log It',
+						value: 'async',
+						description:
+							'Return immediately (HTTP 202) and evaluate in the background, for high-volume logging',
+					},
+					{
+						name: 'Wait for a Human to Approve',
+						value: 'approval',
+						description:
+							'Return immediately and hold the output for review; a person approves or rejects before your workflow proceeds. Reveals the action and callback fields.',
+					},
+				],
+				description: 'What Tracira does once it has checked the output',
+			},
+			{
+				displayName: 'Action Name',
+				name: 'actionName',
+				type: 'string',
+				default: '',
+				displayOptions: {
+					show: { resource: ['log'], operation: ['log'], mode: ['approval'] },
+				},
 				description:
-					'Whether to wait for evaluation to finish and return the full verdict (status, verdict, confidence, explanation) so you can branch on it. On by default; evaluation is capped at 30 seconds. Turn off for high-volume fire-and-forget logging — n8n continues immediately (HTTP 202) and Tracira evaluates in the background.',
+					"Optional. Machine name of the step the AI wants to run, e.g. 'issue_refund' or 'delete_lead'.",
+			},
+			{
+				displayName: 'Action Summary',
+				name: 'actionSummary',
+				type: 'string',
+				default: '',
+				displayOptions: {
+					show: { resource: ['log'], operation: ['log'], mode: ['approval'] },
+				},
+				description:
+					"Optional. Plain-language description of exactly what will happen, e.g. 'Refund €49.00 to Alice Martin (order #8841)'. Reviewers read this to approve or reject.",
+			},
+			{
+				displayName: 'Action Parameters (JSON)',
+				name: 'actionParamsJson',
+				type: 'string',
+				typeOptions: { rows: 3 },
+				default: '',
+				displayOptions: {
+					show: { resource: ['log'], operation: ['log'], mode: ['approval'] },
+				},
+				description:
+					'Optional JSON object of the action\'s parameters, e.g. {"amount": 49}. Usable in data-field rules via paths like action.params.amount.',
+			},
+			{
+				displayName: 'Callback URL',
+				name: 'callbackUrl',
+				type: 'string',
+				default: '',
+				displayOptions: {
+					show: { resource: ['log'], operation: ['log'], mode: ['approval'] },
+				},
+				description:
+					'Optional. A URL Tracira calls when the human decides, so your workflow can resume. Leave blank to poll with the Tracira Trigger instead.',
+			},
+			{
+				displayName: 'Callback Events',
+				name: 'callbackEvents',
+				type: 'options',
+				default: 'all',
+				displayOptions: {
+					show: { resource: ['log'], operation: ['log'], mode: ['approval'] },
+				},
+				options: [
+					{ name: 'All Events (Default)', value: 'all' },
+					{ name: 'Flagged & Errors Only', value: 'flagged_error' },
+					{ name: 'Flagged, Errors & Decisions', value: 'flagged_error_decisions' },
+					{ name: 'Human Decisions Only', value: 'decisions' },
+					{ name: 'Pass Only', value: 'pass' },
+				],
+				description: 'Which events trigger the Callback URL',
 			},
 			{
 				displayName: 'Options',
@@ -895,68 +976,8 @@ export class Tracira implements INodeType {
 				},
 				options: [
 					{
-						displayName: 'Action (Gate Mode)',
-						name: 'action',
-						type: 'fixedCollection',
-						default: {},
-						description:
-							'When the AI output proposes an action to run (issue a refund, delete a record), describe it here so a human approves or rejects it before your workflow executes it. Combine with Callback URL.',
-						options: [
-							{
-								displayName: 'Action',
-								name: 'value',
-								values: [
-									{
-										displayName: 'Name',
-										name: 'name',
-										type: 'string',
-										default: '',
-										description: "Machine name of the action, e.g. 'issue_refund' or 'delete_lead'",
-									},
-									{
-										displayName: 'Summary',
-										name: 'summary',
-										type: 'string',
-										default: '',
-										description:
-											"Plain-language description of exactly what will happen, e.g. 'Refund €49.00 to Alice Martin (order #8841)'. Reviewers read this to approve or reject.",
-									},
-									{
-										displayName: 'Parameters (JSON)',
-										name: 'paramsJson',
-										type: 'string',
-										typeOptions: { rows: 3 },
-										default: '',
-										description:
-											'Optional JSON object of the action\'s parameters, e.g. {"amount": 49, "currency": "EUR"}. Shown to reviewers and usable in Tracira data-field rules via paths like action.params.amount. Keys with an empty value are dropped server-side, same as metadata.',
-									},
-								],
-							},
-						],
-					},
-					{
 						displayName: 'Actor ID',
 						name: 'actorId',
-						type: 'string',
-						default: '',
-					},
-					{
-						displayName: 'Callback Events',
-						name: 'callbackEvents',
-						type: 'options',
-						default: 'all',
-						options: [
-							{ name: 'All Events (Default)', value: 'all' },
-							{ name: 'Flagged & Errors Only', value: 'flagged_error' },
-							{ name: 'Flagged, Errors & Decisions', value: 'flagged_error_decisions' },
-							{ name: 'Human Decisions Only', value: 'decisions' },
-							{ name: 'Pass Only', value: 'pass' },
-						],
-						description: 'Controls which events trigger the Callback URL. Only used when Callback URL is set.',
-					},
-					{
-						displayName: 'Callback URL',
-						name: 'callbackUrl',
 						type: 'string',
 						default: '',
 					},
@@ -1295,27 +1316,33 @@ export class Tracira implements INodeType {
 						}
 					}
 
-					// Proposed action: only sent when a name or summary is filled in.
+					// "After Check" drives everything: sync waits for the verdict,
+					// approval reveals the proposed-action and callback fields.
+					const mode = this.getNodeParameter('mode', itemIndex, 'verdict') as string;
+
+					// Proposed action: only in approval mode, when a name or summary is set.
 					let action: IDataObject | undefined;
-					const actionParam = (options.action as IDataObject | undefined)?.value as
-						| IDataObject
-						| undefined;
-					if (actionParam && (actionParam.name || actionParam.summary)) {
-						let params: IDataObject | undefined;
-						if (actionParam.paramsJson) {
-							try {
-								params = JSON.parse(actionParam.paramsJson as string) as IDataObject;
-							} catch {
-								throw new NodeOperationError(this.getNode(), 'Action Parameters must be valid JSON', {
-									itemIndex,
-								});
+					if (mode === 'approval') {
+						const actionName = this.getNodeParameter('actionName', itemIndex, '') as string;
+						const actionSummary = this.getNodeParameter('actionSummary', itemIndex, '') as string;
+						const actionParamsJson = this.getNodeParameter('actionParamsJson', itemIndex, '') as string;
+						if (actionName || actionSummary) {
+							let params: IDataObject | undefined;
+							if (actionParamsJson) {
+								try {
+									params = JSON.parse(actionParamsJson) as IDataObject;
+								} catch {
+									throw new NodeOperationError(this.getNode(), 'Action Parameters must be valid JSON', {
+										itemIndex,
+									});
+								}
 							}
+							action = stripEmpty({
+								name: actionName || undefined,
+								summary: actionSummary || undefined,
+								params,
+							});
 						}
-						action = stripEmpty({
-							name: actionParam.name as string | undefined,
-							summary: actionParam.summary as string | undefined,
-							params,
-						});
 					}
 
 					// Input and output attachments share the same row shape; only the
@@ -1366,7 +1393,7 @@ export class Tracira implements INodeType {
 							project: this.getNodeParameter('projectName', itemIndex, '', {
 								extractValue: true,
 							}) as string,
-							output: this.getNodeParameter('output', itemIndex) as string,
+							output: this.getNodeParameter('output', itemIndex, '') as string,
 							input: this.getNodeParameter('input', itemIndex, '') as string,
 							task: this.getNodeParameter('taskName', itemIndex, '', {
 								extractValue: true,
@@ -1376,8 +1403,14 @@ export class Tracira implements INodeType {
 							outputAttachments: outputAttachments.length ? outputAttachments : undefined,
 							action,
 							actorId: options.actorId as string | undefined,
-							callbackUrl: options.callbackUrl as string | undefined,
-							callbackEvents: options.callbackEvents as string | undefined,
+							callbackUrl:
+								mode === 'approval'
+									? (this.getNodeParameter('callbackUrl', itemIndex, '') as string) || undefined
+									: undefined,
+							callbackEvents:
+								mode === 'approval'
+									? (this.getNodeParameter('callbackEvents', itemIndex, 'all') as string)
+									: undefined,
 							confidence: options.confidence as number | undefined,
 							costUsd: options.costUsd as number | undefined,
 							id: options.id as string | undefined,
@@ -1387,7 +1420,7 @@ export class Tracira implements INodeType {
 							metadata,
 							sessionId: options.sessionId as string | undefined,
 							subjectId: options.subjectId as string | undefined,
-							sync: this.getNodeParameter('sync', itemIndex, true) as boolean,
+							sync: mode === 'verdict',
 							timestamp: options.timestamp as string | undefined,
 						}),
 					};

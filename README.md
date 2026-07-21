@@ -33,13 +33,13 @@ The package ships two nodes: **Tracira** (actions) and **Tracira Trigger** (watc
 
 Starts a workflow the moment an output gets a verdict or a human decision in Tracira. Pick which events to watch - the default (`approved` / `rejected` / `edited`) fires once a human has decided, the usual choice for approval flows; `flagged`, `pass`, `error`, and `handled` (Taken Over by a Human) events are opt-in. The `handled` event fires when a reviewer records that a person took the task over outside Tracira and the AI output went unused, so a waiting workflow can stop expecting an approval that will never come. Activating the workflow registers the trigger with Tracira automatically (visible under Integrations → Connected triggers); deactivating removes it. Decision events include the AI `output` and its `metadata`, so an approval workflow can deliver the approved reply with no extra lookup. When a reviewer edits an output, `output` already carries their corrected version, so a workflow that maps `output` needs no changes: it delivers what the human approved, never the version they replaced. `correctedOutput` and `aiOutput` are there when you need to tell the cases apart. Every event also carries the output's context IDs (`sessionId`, `subjectId`, `actorId`) alongside the `input` the AI received, so a workflow can route the result back to the right conversation, customer, or record without a follow-up lookup.
 
-The typical human-in-the-loop pattern uses two workflows: workflow A submits the output (AI step → `Check an Output`, Wait for Verdict off), and workflow B starts with the Tracira Trigger, filters on `decision = approved`, and delivers the output.
+The typical human-in-the-loop pattern uses two workflows: workflow A submits the output (AI step → `Check an Output`, **After Check** set to *Wait for a Human to Approve*), and workflow B starts with the Tracira Trigger, filters on `decision = approved`, and delivers the output.
 
 ### Tracira (actions)
 
 The node supports the `Output` resource with these operations (named to match the Tracira Make app modules):
 
-- `Check an Output`: Send an AI output to Tracira and have it checked against your rules. Waits for the verdict by default; supports async (fire-and-forget) mode, callback URL with event filtering, and all standard context fields. `Project Name` and `Task Name` offer a searchable dropdown of your existing Tracira projects/tasks, or accept a new name typed manually.
+- `Check an Output`: Send an AI output to Tracira and have it checked against your rules. One **After Check** choice decides what happens next: *Wait for the Verdict* (default), *Do Not Wait, Just Log It* (async, fire-and-forget), or *Wait for a Human to Approve* (which reveals the proposed-action and callback fields). `Project Name` and `Task Name` offer a searchable dropdown of your existing Tracira projects/tasks, or accept a new name typed manually.
 - `Get an Output`: Fetch a single output by ID.
 - `Search Outputs`: List outputs with filters such as status, project, task, and date range.
 - `Set a Decision`: record a human decision on an output.
@@ -50,9 +50,9 @@ The node supports the `Output` resource with these operations (named to match th
 - `Flag an Output`: Flag an already-checked output for human review, for example when an end-user reports an issue with an AI response. The output re-enters the pending-review queue and notification channels fire.
 - `Upload a File`: Upload a large file (PDF, image, audio) directly to Tracira storage and get back a `key`. Use it for files over ~3 MB that exceed the request size limit; map a binary field (e.g. `data`). Supports up to 32 MB. Pass the returned `key` to the `Check an Output` operation's `Input Attachments` or `Output Attachments` field.
 
-The `Check an Output` operation also has `Input Attachments` (files the AI received) and `Output Attachments` (media the AI produced: generated images, synthesized audio, rendered documents) fields, each with three sources: `Upload File` (send a binary field inline with the request — keep under ~3 MB), `From URL` (a publicly accessible HTTPS URL), or `Tracira Upload` (a `key` from the `Upload a File` operation, for large files). `AI Output` text is required unless an `Output Attachment` carries a media-only output.
+The `Check an Output` operation also has `Input Attachments` (files the AI received) and `Output Attachments` (media the AI produced: generated images, synthesized audio, rendered documents) fields, each with three sources: `Upload File` (send a binary field inline with the request — keep under ~3 MB), `From URL` (a publicly accessible HTTPS URL), or `Tracira Upload` (a `key` from the `Upload a File` operation, for large files). `AI Output` accepts plain text or JSON (with JSON, data-field rules can target individual fields), and is required unless an `Output Attachment` carries a media-only output or a `Proposed Action` is supplied (action-only logs).
 
-The `Check an Output` operation's optional `Action (Gate Mode)` field gates a **proposed action** on human review. When your AI decides to run something with side effects (issue a refund, delete a record), fill in the action's `Name`, a plain-language `Summary`, and optional `Parameters (JSON)`. Reviewers approve or reject the action in Tracira before your workflow executes it, and data-field rules can gate it via paths like `action.params.amount`. Combine with a `Callback URL` so the workflow runs the action only after approval.
+Setting **After Check** to *Wait for a Human to Approve* reveals the `Action Name`, `Action Summary`, `Action Parameters (JSON)`, `Callback URL`, and `Callback Events` fields. Use them when your AI decides to run something with side effects (issue a refund, delete a record): fill in the plain-language `Action Summary` reviewers read to approve or reject, plus an optional machine `Action Name` and `Action Parameters (JSON)`. Reviewers decide in Tracira before your workflow executes the action, and data-field rules can gate it via paths like `action.params.amount`. Set a `Callback URL` so the workflow resumes automatically after approval, or leave it blank and poll with the Tracira Trigger. You can also submit an action with no `AI Output` at all (an action-only log) when there is no message, only a step to approve.
 
 The `Check an Output` operation also has an optional `Instructions Version` field. Pass the `Version` returned by the `Get Instructions` operation (see the `Instruction` resource below), and the output links back to the exact instructions the AI ran with, so reviewers can open those instructions straight from the output and know which version produced it.
 
@@ -67,11 +67,11 @@ The node also supports the `API` resource with:
 
 - `Call`: Make an arbitrary authenticated request to the Tracira API.
 
-### Sync vs async
+### After Check (sync vs async)
 
-By default the `Check an Output` operation **waits for the verdict** (`Wait for Verdict` is on): Tracira evaluates inline and responds with the full `{ ok, id, status, verdict, confidenceScore, explanation }` so you can branch on `status` or `verdict` in the same workflow execution. Evaluation is capped at 30 seconds.
+By default **After Check** is *Wait for the Verdict*: Tracira evaluates inline and responds with the full `{ ok, id, status, verdict, confidenceScore, explanation }` so you can branch on `status` or `verdict` in the same workflow execution. Evaluation is capped at 30 seconds.
 
-Turn **Wait for Verdict** off for fire-and-forget logging: Tracira responds immediately with HTTP `202` and `{ ok, id, status: "pending" }`, then evaluates in the background. Use this for high-volume logging where you don't need the verdict inline.
+Choose *Do Not Wait, Just Log It* for fire-and-forget logging: Tracira responds immediately with HTTP `202` and `{ ok, id, status: "pending" }`, then evaluates in the background. Use this for high-volume logging where you don't need the verdict inline. *Wait for a Human to Approve* also returns immediately, but holds the output for review and (optionally) calls your `Callback URL` once a person decides.
 
 ## Keeping this node in sync with the Tracira API
 
@@ -166,6 +166,10 @@ Do **not** publish manually from a local machine — provenance requires the Git
 - [Tracira API schema](https://www.tracira.com/openapi.json)
 
 ## Version history
+
+### 0.13.0
+
+**Breaking:** the `Check an Output` operation replaces the `Wait for Verdict` toggle and the `Options → Proposed Action` / `Callback URL` / `Callback Events` fields with a single **After Check** choice: *Wait for the Verdict*, *Do Not Wait, Just Log It*, or *Wait for a Human to Approve*. The approval choice reveals `Action Name`, `Action Summary`, `Action Parameters (JSON)`, `Callback URL`, and `Callback Events` as top-level fields. Existing `Log` steps that set `Wait for Verdict` or the old action/callback options must be reconfigured. `AI Output` now accepts JSON (data-field rules can target individual fields) and can be omitted entirely for action-only logs.
 
 ### 0.5.0
 
