@@ -928,7 +928,7 @@ export class Tracira implements INodeType {
 										typeOptions: { rows: 3 },
 										default: '',
 										description:
-											'Optional JSON object of the action\'s parameters, e.g. {"amount": 49, "currency": "EUR"}. Shown to reviewers and usable in Tracira data-field rules via paths like action.params.amount.',
+											'Optional JSON object of the action\'s parameters, e.g. {"amount": 49, "currency": "EUR"}. Shown to reviewers and usable in Tracira data-field rules via paths like action.params.amount. Keys with an empty value are dropped server-side, same as metadata.',
 									},
 								],
 							},
@@ -995,7 +995,8 @@ export class Tracira implements INodeType {
 							rows: 4,
 						},
 						default: '',
-						description: 'Optional JSON object to store as output metadata',
+						description:
+							'Optional JSON object to store as output metadata. Keys whose value is empty (null or a blank string) are dropped server-side, so a sometimes-blank field never fails the log; values like 0 or false are kept.',
 					},
 					{
 						displayName: 'Output ID',

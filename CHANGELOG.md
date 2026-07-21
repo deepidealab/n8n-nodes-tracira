@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.12.1] - 2026-07-21
+
+### Changed
+- `Metadata JSON` and the Action `Parameters (JSON)` field descriptions now note that keys with an empty value (null or a blank string) are dropped by Tracira server-side, so mapping a sometimes-blank field never fails the output; values like `0` or `false` are kept. Behaviour only: this documents server-side handling and requires no workflow changes.
+
 ## [0.12.0] - 2026-07-20
 
 ### Added
