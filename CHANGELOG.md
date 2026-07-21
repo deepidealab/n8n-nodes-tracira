@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.12.2] - 2026-07-21
+
+### Changed
+- README documentation only, addressing n8n verification review feedback. Added an `Instruction` subsection to the Operations section covering `Get Instructions` (fetches the active instructions, seeding version 1 from `Starter Instructions` on first run) and `Update Instructions` (saves a new active version with the optional reviewer `Comment` and originating `Output ID`), plus a note on the `Check an Output` operation's optional `Instructions Version` field that links an output back to the instructions the AI ran with. Documented the Tracira Trigger's `handled` (Taken Over by a Human) opt-in event and corrected the opt-in event value `passed` to its real value `pass`. No node behaviour changed.
+
 ## [0.12.1] - 2026-07-21
 
 ### Changed
