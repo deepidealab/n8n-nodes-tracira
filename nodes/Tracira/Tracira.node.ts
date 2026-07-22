@@ -201,13 +201,6 @@ export class Tracira implements INodeType {
 				},
 				options: [
 					{
-						name: 'Check an Output',
-						value: 'log',
-						action: 'Check an output',
-						description:
-							'Send an AI output to Tracira and have it checked against your rules. Returns a verdict, confidence score, and explanation based on your configured rules.',
-					},
-					{
 						name: 'Flag an Output',
 						value: 'flag',
 						action: 'Flag an output',
@@ -226,6 +219,13 @@ export class Tracira implements INodeType {
 						action: 'Search outputs',
 						description:
 							'Return a filtered list of outputs from Tracira. Filter by status, project, task name, or date range.',
+					},
+					{
+						name: 'Send an Output',
+						value: 'log',
+						action: 'Send an output',
+						description:
+							'Submit an AI output to Tracira to be checked against your rules. Returns a verdict, confidence score, and explanation based on your configured rules.',
 					},
 					{
 						name: 'Set a Decision',
@@ -280,7 +280,7 @@ export class Tracira implements INodeType {
 					show: instructionsAnyDisplay,
 				},
 				description:
-					'Must match the Project Name used in the Check an Output operation so the instructions and the outputs belong together',
+					'Must match the Project Name used in the Send an Output operation so the instructions and the outputs belong together',
 				modes: [
 					{
 						displayName: 'From List',
@@ -309,7 +309,7 @@ export class Tracira implements INodeType {
 				displayOptions: {
 					show: instructionsAnyDisplay,
 				},
-				description: 'Must match the Task Name used in the Check an Output operation',
+				description: 'Must match the Task Name used in the Send an Output operation',
 				modes: [
 					{
 						displayName: 'From List',
@@ -524,7 +524,7 @@ export class Tracira implements INodeType {
 					},
 				},
 				description:
-					'The instruction sent back to the AI describing what to change. The AI should regenerate the output and resubmit it with the Check an Output operation, setting Revision Of to this output ID.',
+					'The instruction sent back to the AI describing what to change. The AI should regenerate the output and resubmit it with the Send an Output operation, setting Revision Of to this output ID.',
 			},
 			{
 				displayName: 'Output ID',

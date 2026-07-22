@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.14.0] - 2026-07-22
+
+### Changed
+- Renamed the `Send an Output` operation (was `Check an Output`) so the display name reflects what the builder does: they send an output to Tracira, and Tracira checks it against your rules. The old name implied checking has to happen at submit time, which conflicts with the async *Do Not Wait, Just Log It* default and with the goal of piping every output into Tracira first and adding rules later. Display name only: the internal `operation` value stays `log`, so existing workflows keep working without edits. Kept in sync with the Tracira app and the Make custom app, which use the matching **Send an output** label.
+
 ## [0.13.1] - 2026-07-21
 
 ### Added
