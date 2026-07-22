@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.14.1] - 2026-07-22
+
+### Added
+- `Send an Output` → `Options` → **Metadata**: a key/value rows field for output metadata, so you add one `Key`/`Value` row per field instead of hand-writing a JSON string (which rendered as a tall, wrapped expression box). `Metadata JSON` stays for when the whole object comes from one upstream value; the rows merge over it, so existing workflows are unaffected. Display/UX addition only, no behaviour change to what gets stored.
+
 ## [0.14.0] - 2026-07-22
 
 ### Changed

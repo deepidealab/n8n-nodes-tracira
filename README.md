@@ -54,6 +54,8 @@ The `Send an Output` operation also has `Input Attachments` (files the AI receiv
 
 Setting **After Check** to *Wait for a Human to Approve* reveals the `Action Name`, `Action Summary`, `Action Parameters (JSON)`, `Callback URL`, and `Callback Events` fields. Use them when your AI decides to run something with side effects (issue a refund, delete a record): fill in the plain-language `Action Summary` reviewers read to approve or reject, plus an optional machine `Action Name` and `Action Parameters (JSON)`. Reviewers decide in Tracira before your workflow executes the action, and data-field rules can gate it via paths like `action.params.amount`. Set a `Callback URL` so the workflow resumes automatically after approval, or leave it blank and poll with the Tracira Trigger. You can also submit an action with no `AI Output` at all (an action-only log) when there is no message, only a step to approve.
 
+Under `Options`, the `Metadata` field stores extra searchable context with the output (a subject line, a priority, a ticket ID). Add one row per field — a `Key` and a `Value` — instead of hand-writing JSON; empty values are dropped server-side. `Metadata JSON` remains for when the whole object comes from one upstream value, and the rows merge over it.
+
 The `Send an Output` operation also has an optional `Instructions Version` field. Pass the `Version` returned by the `Get Instructions` operation (see the `Instruction` resource below), and the output links back to the exact instructions the AI ran with, so reviewers can open those instructions straight from the output and know which version produced it.
 
 ### Instruction

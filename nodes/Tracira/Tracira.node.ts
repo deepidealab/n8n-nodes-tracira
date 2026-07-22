@@ -1009,6 +1009,38 @@ export class Tracira implements INodeType {
 						description: 'Duration of the AI call in milliseconds',
 					},
 					{
+						displayName: 'Metadata',
+						name: 'metadata',
+						type: 'fixedCollection',
+						typeOptions: {
+							multipleValues: true,
+						},
+						placeholder: 'Add Metadata Field',
+						default: {},
+						description:
+							'Extra context stored with the output as searchable fields (e.g. subject, priority). Add one row per field: a key and its value. Empty values are dropped server-side, so a sometimes-blank field never fails the submission.',
+						options: [
+							{
+								name: 'entry',
+								displayName: 'Field',
+								values: [
+									{
+										displayName: 'Key',
+										name: 'key',
+										type: 'string',
+										default: '',
+									},
+									{
+										displayName: 'Value',
+										name: 'value',
+										type: 'string',
+										default: '',
+									},
+								],
+							},
+						],
+					},
+					{
 						displayName: 'Metadata JSON',
 						name: 'metadataJson',
 						type: 'string',
@@ -1017,7 +1049,7 @@ export class Tracira implements INodeType {
 						},
 						default: '',
 						description:
-							'Optional JSON object to store as output metadata. Keys whose value is empty (null or a blank string) are dropped server-side, so a sometimes-blank field never fails the log; values like 0 or false are kept.',
+							'Advanced: a raw JSON object of metadata, for when the values come from one upstream object. The Metadata rows above merge over this. Keys whose value is empty (null or a blank string) are dropped server-side; values like 0 or false are kept.',
 					},
 					{
 						displayName: 'Output ID',
@@ -1313,6 +1345,17 @@ export class Tracira implements INodeType {
 							throw new NodeOperationError(this.getNode(), 'Metadata JSON must be valid JSON', {
 								itemIndex,
 							});
+						}
+					}
+
+					// Metadata rows (the simple UI) merge over any JSON blob, so a row wins
+					// when both set the same key.
+					const metadataEntries = ((options.metadata as IDataObject | undefined)?.entry ??
+						[]) as Array<{ key?: string; value?: string }>;
+					if (metadataEntries.length) {
+						metadata = { ...(metadata ?? {}) };
+						for (const { key, value } of metadataEntries) {
+							if (key) metadata[key] = value ?? '';
 						}
 					}
 
