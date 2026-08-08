@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.15.0] - 2026-08-08
+
+### Added
+- `Flag an Output` → **Flagged By**: choose *An End-User Reported It* or *This Workflow Decided*. It sets the attribution the reviewer reads next to the reason ("Flagged by end-user: …" vs "Flagged by your automation: …"), so a workflow that flags on its own logic no longer presents itself as a customer complaint. Workflows saved before this parameter existed fall back to `end_user`, the behaviour the operation always had, so no existing workflow changes. Requires the Tracira API change that accepts `flaggedBy` on `PATCH /api/logs/{id}/status`; against an older API the field is ignored and the previous wording applies.
+
 ## [0.14.1] - 2026-07-22
 
 ### Added

@@ -47,7 +47,7 @@ The node supports the `Output` resource with these operations (named to match th
   - `Edit` - the output was wrong. Either send the corrected version (`I Have the Corrected Version`), which the workflow acts on with nothing regenerated, or a comment (`Ask the AI to Redo It`), which is delivered to the downstream automation so it regenerates the output and resubmits it with the `Send an Output` operation's `Revision Of` field set to the original output ID, forming a revision chain.
   - `Reject` - the workflow does not proceed. Always inaction: it never means "do the opposite". To reverse a call the AI made, use `Edit` with the corrected value.
   - `Take Over` - a human handled it outside Tracira. The task is done and the AI output went unused. Records no teaching signal, because taking over is not a judgement that the AI was wrong.
-- `Flag an Output`: Flag an already-checked output for human review, for example when an end-user reports an issue with an AI response. The output re-enters the pending-review queue and notification channels fire.
+- `Flag an Output`: Flag an already-checked output for human review, for example when an end-user reports an issue with an AI response. The output re-enters the pending-review queue and notification channels fire. `Reason` becomes the output's explanation - the "why this needs you" text the reviewer reads - and `Flagged By` sets who they are told asked for it: *An End-User Reported It* or *This Workflow Decided*. Use this for flags your rules cannot express; rule-driven flags happen automatically at check time and write their own explanation.
 - `Upload a File`: Upload a large file (PDF, image, audio) directly to Tracira storage and get back a `key`. Use it for files over ~3 MB that exceed the request size limit; map a binary field (e.g. `data`). Supports up to 32 MB. Pass the returned `key` to the `Send an Output` operation's `Input Attachments` or `Output Attachments` field.
 
 The `Send an Output` operation also has `Input Attachments` (files the AI received) and `Output Attachments` (media the AI produced: generated images, synthesized audio, rendered documents) fields, each with three sources: `Upload File` (send a binary field inline with the request — keep under ~3 MB), `From URL` (a publicly accessible HTTPS URL), or `Tracira Upload` (a `key` from the `Upload a File` operation, for large files). `AI Output` accepts plain text or JSON (with JSON, data-field rules can target individual fields), and is required unless an `Output Attachment` carries a media-only output or a `Proposed Action` is supplied (action-only logs).
@@ -168,6 +168,22 @@ Do **not** publish manually from a local machine — provenance requires the Git
 - [Tracira API schema](https://www.tracira.com/openapi.json)
 
 ## Version history
+
+### 0.15.0
+
+`Flag an Output` gains a **Flagged By** choice: *An End-User Reported It* or *This Workflow Decided*. It sets who the reviewer is told asked for the review, so a workflow that flags on its own logic no longer shows up as an end-user complaint. Workflows saved before this fall back to *An End-User Reported It*, the behaviour the operation always had, so no existing workflow changes.
+
+### 0.14.1
+
+`Send an Output` → `Options` → **Metadata**: a key/value rows field for output metadata, so you add one `Key`/`Value` row per field instead of hand-writing a JSON string (which rendered as a tall, wrapped expression box). `Metadata JSON` stays for when the whole object comes from one upstream value; the rows merge over it, so existing workflows are unaffected. Display/UX addition only, no change to what gets stored.
+
+### 0.14.0
+
+Renamed the `Check an Output` operation to `Send an Output`, so the display name reflects what the builder does: they send an output to Tracira, and Tracira checks it against your rules. The old name implied checking has to happen at submit time, which conflicts with the async *Do Not Wait, Just Log It* default. Display name only — the internal `operation` value stays `log`, so existing workflows keep working without edits. Matches the Tracira app and the Make custom app.
+
+### 0.13.1
+
+Tracira Trigger: new **Taught After the Fact** (`taught`) opt-in event. It fires when a reviewer teaches the AI after an output already went out (approved, rejected, or auto-passed); it never resumes a paused workflow, it only informs subscribed automations of the new feedback. The event was already emitted by Tracira but could not be selected here.
 
 ### 0.13.0
 

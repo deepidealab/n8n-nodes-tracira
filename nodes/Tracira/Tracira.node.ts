@@ -552,6 +552,29 @@ export class Tracira implements INodeType {
 					'Optional reason for flagging, stored as the output explanation, for example the message your end-user submitted when reporting the issue',
 			},
 			{
+				displayName: 'Flagged By',
+				name: 'flaggedBy',
+				type: 'options',
+				default: 'end_user',
+				displayOptions: {
+					show: flagDisplay,
+				},
+				options: [
+					{
+						name: 'An End-User Reported It',
+						value: 'end_user',
+						description: 'A real person asked for the output to be looked at',
+					},
+					{
+						name: 'This Workflow Decided',
+						value: 'api',
+						description: 'Your own logic made the call, with no person involved',
+					},
+				],
+				description:
+					'Who asked for the review. The reviewer reads this next to the reason, so pick the one that is true: telling a manager an end-user reported an issue when the workflow made the call is misleading.',
+			},
+			{
 				displayName: 'Input Binary Field',
 				name: 'binaryPropertyName',
 				type: 'string',
@@ -1573,6 +1596,9 @@ export class Tracira implements INodeType {
 				} else if (resource === 'log' && operation === 'flag') {
 					const logId = this.getNodeParameter('flagLogId', itemIndex) as string;
 					const reason = this.getNodeParameter('flagReason', itemIndex, '') as string;
+					// Workflows saved before Flagged By existed fall back to end_user, the
+					// behaviour this operation always had - their reviewers see no change.
+					const flaggedBy = this.getNodeParameter('flaggedBy', itemIndex, 'end_user') as string;
 
 					requestOptions = {
 						method: 'PATCH',
@@ -1580,6 +1606,7 @@ export class Tracira implements INodeType {
 						body: stripEmpty({
 							status: 'flagged',
 							reason,
+							flaggedBy,
 						}),
 					};
 				} else if (resource === 'log' && operation === 'upload') {
