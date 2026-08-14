@@ -52,7 +52,9 @@ The node supports the `Output` resource with these operations (named to match th
 
 The `Send an Output` operation also has `Input Attachments` (files the AI received) and `Output Attachments` (media the AI produced: generated images, synthesized audio, rendered documents) fields, each with three sources: `Upload File` (send a binary field inline with the request — keep under ~3 MB), `From URL` (a publicly accessible HTTPS URL), or `Tracira Upload` (a `key` from the `Upload a File` operation, for large files). `AI Output` accepts plain text or JSON (with JSON, data-field rules can target individual fields), and is required unless an `Output Attachment` carries a media-only output or a `Proposed Action` is supplied (action-only logs).
 
-Setting **After Check** to *Wait for a Human to Approve* reveals the `Action Name`, `Action Summary`, `Action Parameters (JSON)`, `Callback URL`, and `Callback Events` fields. Use them when your AI decides to run something with side effects (issue a refund, delete a record): fill in the plain-language `Action Summary` reviewers read to approve or reject, plus an optional machine `Action Name` and `Action Parameters (JSON)`. Reviewers decide in Tracira before your workflow executes the action, and data-field rules can gate it via paths like `action.params.amount`. Set a `Callback URL` so the workflow resumes automatically after approval, or leave it blank and poll with the Tracira Trigger. You can also submit an action with no `AI Output` at all (an action-only log) when there is no message, only a step to approve.
+Setting **After Check** to *Wait for a Human to Approve* reveals the `Action Name`, `Action Summary`, `Action Parameters (JSON)`, `Callback URL`, and `Callback Events` fields. Use them when your AI decides to run something with side effects (issue a refund, delete a record). `Action Name` and `Action Summary` are both required here: they are what the reviewer approves or rejects, so the summary must be a plain-language sentence describing exactly what will happen. `Action Parameters (JSON)` is optional and can be gated by data-field rules via paths like `action.params.amount`.
+
+This choice holds the output in the review queue **whatever your rules conclude**. That distinction matters: an action describes *what* is being reviewed, while the rules answer *is this wrong?* In a workspace with no rule matching that project and task an output evaluates as `pass`, so without this the action would run unreviewed. Rules still run and their verdict is still recorded; they just no longer decide whether a person is asked. Set a `Callback URL` so the workflow resumes automatically after approval, or leave it blank and poll with the Tracira Trigger. You can also submit an action with no `AI Output` at all (an action-only log) when there is no message, only a step to approve.
 
 Under `Options`, the `Metadata` field stores extra searchable context with the output (a subject line, a priority, a ticket ID). Add one row per field — a `Key` and a `Value` — instead of hand-writing JSON; empty values are dropped server-side. `Metadata JSON` remains for when the whole object comes from one upstream value, and the rows merge over it.
 
@@ -73,7 +75,7 @@ The node also supports the `API` resource with:
 
 By default **After Check** is *Wait for the Verdict*: Tracira evaluates inline and responds with the full `{ ok, id, status, verdict, confidenceScore, explanation }` so you can branch on `status` or `verdict` in the same workflow execution. Evaluation is capped at 30 seconds.
 
-Choose *Do Not Wait, Just Log It* for fire-and-forget logging: Tracira responds immediately with HTTP `202` and `{ ok, id, status: "pending" }`, then evaluates in the background. Use this for high-volume logging where you don't need the verdict inline. *Wait for a Human to Approve* also returns immediately, but holds the output for review and (optionally) calls your `Callback URL` once a person decides.
+Choose *Do Not Wait, Just Log It* for fire-and-forget logging: Tracira responds immediately with HTTP `202` and `{ ok, id, status: "pending" }`, then evaluates in the background. Use this for high-volume logging where you don't need the verdict inline. *Wait for a Human to Approve* also returns immediately, but holds the output in the review queue whatever the rules conclude, and (optionally) calls your `Callback URL` once a person decides.
 
 ## Keeping this node in sync with the Tracira API
 
@@ -168,6 +170,10 @@ Do **not** publish manually from a local machine — provenance requires the Git
 - [Tracira API schema](https://www.tracira.com/openapi.json)
 
 ## Version history
+
+### 0.16.0
+
+*Wait for a Human to Approve* now actually waits. The choice previously sent the output asynchronously and left the rules to decide whether anyone was asked, so in a workspace with no rule matching that project and task the output passed and the workflow ran the action unreviewed, with nothing reporting an error. The operation now sends `requireApproval`, which queues the output for a person whatever the rules conclude; the rules still run and their verdict is still recorded. `Action Name` and `Action Summary` are now required within that choice, since an approval request with neither gave the reviewer nothing to judge. Requires the Tracira API change that accepts `requireApproval` on `POST /api/logs`; against an older API the field is ignored and the previous behaviour applies. Only affects steps set to *Wait for a Human to Approve*.
 
 ### 0.15.0
 

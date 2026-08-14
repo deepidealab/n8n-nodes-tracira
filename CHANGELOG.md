@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.16.0] - 2026-08-14
+
+### Fixed
+- `Send an Output` → **After Check** → *Wait for a Human to Approve* did not request an approval. It sent the output asynchronously and left the workspace's rules to decide whether anyone was asked, so with no rule matching that project and task the output evaluated as `pass` and the workflow executed the action unreviewed, with no error to signal it. The operation now sends `requireApproval: true` in that mode, which queues the output for a person whatever the rules conclude. Rules still run and their verdict and confidence are still recorded; they no longer decide whether a person is asked. Requires the Tracira API change that accepts `requireApproval` on `POST /api/logs`; against an older API the field is ignored and the previous behaviour applies.
+
+### Changed
+- `Action Name` and `Action Summary` are now required within *Wait for a Human to Approve*. Both were optional, so an approval request could carry nothing for the reviewer to judge. Only affects steps set to that choice; *Wait for the Verdict* and *Do Not Wait, Just Log It* are unchanged.
+
 ## [0.15.0] - 2026-08-08
 
 ### Added

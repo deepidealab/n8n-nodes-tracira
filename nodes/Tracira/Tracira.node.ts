@@ -921,7 +921,7 @@ export class Tracira implements INodeType {
 						name: 'Wait for a Human to Approve',
 						value: 'approval',
 						description:
-							'Return immediately and hold the output for review; a person approves or rejects before your workflow proceeds. Reveals the action and callback fields.',
+							'Return immediately and hold the output in the review queue whatever the rules conclude, so the gate holds even with no matching rule. A person approves or rejects before your workflow acts. Reveals the action and callback fields.',
 					},
 				],
 				description: 'What Tracira does once it has checked the output',
@@ -931,22 +931,24 @@ export class Tracira implements INodeType {
 				name: 'actionName',
 				type: 'string',
 				default: '',
+				required: true,
 				displayOptions: {
 					show: { resource: ['log'], operation: ['log'], mode: ['approval'] },
 				},
 				description:
-					"Optional. Machine name of the step the AI wants to run, e.g. 'issue_refund' or 'delete_lead'.",
+					"Machine name of the step the AI wants to run, e.g. 'issue_refund' or 'delete_lead'. This is what the human approves or rejects.",
 			},
 			{
 				displayName: 'Action Summary',
 				name: 'actionSummary',
 				type: 'string',
 				default: '',
+				required: true,
 				displayOptions: {
 					show: { resource: ['log'], operation: ['log'], mode: ['approval'] },
 				},
 				description:
-					"Optional. Plain-language description of exactly what will happen, e.g. 'Refund €49.00 to Alice Martin (order #8841)'. Reviewers read this to approve or reject.",
+					"Plain-language description of exactly what will happen, e.g. 'Refund €49.00 to Alice Martin (order #8841)'. Reviewers read this verbatim to approve or reject.",
 			},
 			{
 				displayName: 'Action Parameters (JSON)',
@@ -1487,6 +1489,11 @@ export class Tracira implements INodeType {
 							sessionId: options.sessionId as string | undefined,
 							subjectId: options.subjectId as string | undefined,
 							sync: mode === 'verdict',
+							// The rules answer "is this wrong?", never "may this proceed?": with no
+							// rule matching the project and task an output evaluates as pass, so
+							// without this flag approval mode would log and let the action run
+							// unreviewed. Omitted outside approval mode rather than sent as false.
+							requireApproval: mode === 'approval' ? true : undefined,
 							timestamp: options.timestamp as string | undefined,
 						}),
 					};
