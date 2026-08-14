@@ -85,7 +85,7 @@ export class TraciraTrigger implements INodeType {
 					{ name: 'Taught After the Fact', value: 'taught' },
 				],
 				description:
-					'Which Tracira events start this workflow. The default (approved / rejected / edited) fires once a human has made a decision - the usual choice for approval flows. Decision events include the AI output and its metadata, so the workflow can deliver an approved reply directly. When a reviewer edits an output, output already carries their corrected version, so a workflow that maps output needs no changes; correctedOutput and aiOutput let you tell the cases apart. No setup is needed in Tracira: activating this workflow registers the trigger automatically.',
+					'Which Tracira events start this workflow. The default (approved / rejected / edited) fires once a human has made a decision - the usual choice for approval flows. Decision events include the AI output and its metadata, so the workflow can deliver an approved reply directly. When a reviewer edits an output, output already carries their corrected version, so a workflow that maps output needs no changes; correctedOutput and aiOutput let you tell the cases apart. Any files on the output arrive in attachments, each with a URL and a key: pass either to the Download a File operation to get the document back, or to an attachment with source "Already in Tracira" to keep it on the new version. No setup is needed in Tracira: activating this workflow registers the trigger automatically.',
 			},
 		],
 	};

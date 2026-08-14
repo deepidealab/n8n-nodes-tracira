@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.17.0] - 2026-08-14
+
+### Added
+- **Tracira Trigger** events now carry an `attachments` array listing every file stored on the output, each with `role` (`input` or `output`), `filename`, `contentType`, `key`, and an absolute `url`. Previously the only trace of a file was a relative proxy path buried inside the serialized `input` string, which a workflow could not act on.
+- `Download a File` operation: exchanges an attachment's `key` or `url` for the file itself and puts it in a binary field, ready for an AI node. It resolves a short-lived signed URL first rather than following the media redirect, because n8n forwards the `Authorization` header across redirects and R2 rejects a presigned request that carries one.
+- `Already in Tracira` source on `Input Attachments` and `Output Attachments`: re-attaches a file already stored on an earlier output by key, instead of uploading it a second time.
+
+Together these close the redo loop for document work. When a reviewer sends a parsed PDF back with a comment, the workflow that produced it is long gone and no longer holds the file; it can now download the original from Tracira, rerun the AI with the comment, and resubmit with `Revision Of` set. A re-attached file is copied into the new output rather than shared with the old one, so deleting an earlier output can never strip the file off a later revision; each copy counts against the workspace storage quota.
+
+Requires the Tracira API changes that serve media to a workspace token and accept `{ source: "stored", key }` on `POST /api/logs`. Against an older API, `Download a File` returns 401 and a stored re-attach is rejected; every other operation is unaffected.
+
 ## [0.16.1] - 2026-08-14
 
 ### Fixed

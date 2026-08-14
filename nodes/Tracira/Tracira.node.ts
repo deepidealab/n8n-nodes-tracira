@@ -55,6 +55,11 @@ const uploadDisplay = {
 	operation: ['upload'],
 };
 
+const downloadDisplay = {
+	resource: ['log'],
+	operation: ['download'],
+};
+
 const apiCallDisplay = {
 	resource: ['api'],
 	operation: ['call'],
@@ -200,6 +205,13 @@ export class Tracira implements INodeType {
 					show: logResourceDisplay,
 				},
 				options: [
+					{
+						name: 'Download a File',
+						value: 'download',
+						action: 'Download a file',
+						description:
+							'Fetch a file stored on an output as binary data. Use it when a person asked the AI to redo the work and it needs the original document again.',
+					},
 					{
 						name: 'Flag an Output',
 						value: 'flag',
@@ -610,6 +622,43 @@ export class Tracira implements INodeType {
 					'Optional. Override the MIME type (e.g. application/pdf, image/png). Only needed when the file name has no recognizable extension.',
 			},
 			{
+				displayName: 'File',
+				name: 'downloadSource',
+				type: 'string',
+				required: true,
+				default: '',
+				displayOptions: {
+					show: downloadDisplay,
+				},
+				hint: 'The File URL or File Key from an attachment on the Decision trigger, or from Get an Output',
+				description:
+					"Which stored file to fetch. Accepts the attachment's URL or its key; both name the same file.",
+			},
+			{
+				displayName: 'Output Binary Field',
+				name: 'downloadBinaryProperty',
+				type: 'string',
+				required: true,
+				default: 'data',
+				displayOptions: {
+					show: downloadDisplay,
+				},
+				hint: 'The name of the output field the downloaded file is placed in',
+				description:
+					'Name of the binary field to put the file in, ready for an AI node to read',
+			},
+			{
+				displayName: 'File Name',
+				name: 'downloadFileName',
+				type: 'string',
+				default: '',
+				displayOptions: {
+					show: downloadDisplay,
+				},
+				description:
+					'Optional. Renames the downloaded file. Leave empty to keep the name it was stored under.',
+			},
+			{
 				displayName: 'Project Name',
 				name: 'projectName',
 				type: 'resourceLocator',
@@ -707,11 +756,11 @@ export class Tracira implements INodeType {
 								default: '',
 								displayOptions: {
 									show: {
-										source: ['uploaded'],
+										source: ['uploaded', 'stored'],
 									},
 								},
 								description:
-									'The key returned by an Upload a File operation. Use this for large files (over 3 MB) that cannot be sent inline.',
+									'For "Tracira Upload", the key returned by an Upload a File operation — use it for files over 3 MB that cannot be sent inline. For "Already in Tracira", the File Key or File URL from an attachment on the Decision trigger, Get an Output, or Download a File. A re-attached file is copied, so deleting the earlier output leaves this one intact.',
 							},
 							{
 								displayName: 'File Name',
@@ -740,6 +789,12 @@ export class Tracira implements INodeType {
 								type: 'options',
 								default: 'upload',
 								options: [
+									{
+										name: 'Already in Tracira',
+										value: 'stored',
+										description:
+											'A file already stored on an earlier output — keeps the same document on this version without uploading it again',
+									},
 									{
 										name: 'From URL',
 										value: 'url',
@@ -816,11 +871,11 @@ export class Tracira implements INodeType {
 								default: '',
 								displayOptions: {
 									show: {
-										source: ['uploaded'],
+										source: ['uploaded', 'stored'],
 									},
 								},
 								description:
-									'The key returned by an Upload a File operation. Use this for large files (over 3 MB) that cannot be sent inline.',
+									'For "Tracira Upload", the key returned by an Upload a File operation — use it for files over 3 MB that cannot be sent inline. For "Already in Tracira", the File Key or File URL from an attachment on the Decision trigger, Get an Output, or Download a File. A re-attached file is copied, so deleting the earlier output leaves this one intact.',
 							},
 							{
 								displayName: 'File Name',
@@ -849,6 +904,12 @@ export class Tracira implements INodeType {
 								type: 'options',
 								default: 'upload',
 								options: [
+									{
+										name: 'Already in Tracira',
+										value: 'stored',
+										description:
+											'A file already stored on an earlier output — keeps the same document on this version without uploading it again',
+									},
 									{
 										name: 'From URL',
 										value: 'url',
@@ -1680,6 +1741,71 @@ export class Tracira implements INodeType {
 
 					returnData.push({
 						json: { key, contentType },
+						pairedItem: itemIndex,
+					});
+					continue;
+				} else if (resource === 'log' && operation === 'download') {
+					const source = this.getNodeParameter('downloadSource', itemIndex) as string;
+					const binaryPropertyName = this.getNodeParameter(
+						'downloadBinaryProperty',
+						itemIndex,
+						'data',
+					) as string;
+					const fileNameOverride = this.getNodeParameter(
+						'downloadFileName',
+						itemIndex,
+						'',
+					) as string;
+
+					// 1. Exchange the key or URL for a short-lived signed R2 URL. Done as
+					// its own call rather than following the /media/{key} redirect: n8n
+					// follows redirects and carries the Authorization header along, which
+					// R2 rejects on a presigned request.
+					const signed = (await this.helpers.httpRequestWithAuthentication.call(
+						this,
+						'traciraApi',
+						{
+							method: 'GET',
+							url: `${baseUrl}/media-url`,
+							qs: stripEmpty({ source, filename: fileNameOverride }),
+						},
+					)) as IDataObject;
+
+					const signedUrl = signed.url as string | undefined;
+					if (!signedUrl) {
+						throw new NodeOperationError(
+							this.getNode(),
+							'Tracira did not return a download URL for this file',
+							{ itemIndex },
+						);
+					}
+
+					// 2. GET the bytes with no Authorization header, same reason as above.
+					const fileBuffer = (await this.helpers.httpRequest({
+						method: 'GET',
+						url: signedUrl,
+						encoding: 'arraybuffer',
+						json: false,
+					})) as Buffer;
+
+					const filename =
+						fileNameOverride || (signed.filename as string | undefined) || 'file';
+					const binaryData = await this.helpers.prepareBinaryData(
+						Buffer.from(fileBuffer),
+						filename,
+						signed.contentType as string | undefined,
+					);
+
+					returnData.push({
+						// The key travels with the file so the same item can be handed
+						// straight back to Send an Output as a "Stored in Tracira"
+						// attachment, keeping the document on the new version.
+						json: {
+							key: signed.key ?? source,
+							filename,
+							contentType: signed.contentType,
+						},
+						binary: { [binaryPropertyName]: binaryData },
 						pairedItem: itemIndex,
 					});
 					continue;
