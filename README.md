@@ -171,6 +171,10 @@ Do **not** publish manually from a local machine — provenance requires the Git
 
 ## Version history
 
+### 0.16.1
+
+Removed `usableAsTool` from the **Tracira Trigger** node: a webhook trigger cannot be invoked as an AI-agent tool, and declaring it polluted n8n's tool picker. Reported by n8n's review of 0.16.0. No behaviour change, and the Tracira action node is still usable as a tool.
+
 ### 0.16.0
 
 *Wait for a Human to Approve* now actually waits. The choice previously sent the output asynchronously and left the rules to decide whether anyone was asked, so in a workspace with no rule matching that project and task the output passed and the workflow ran the action unreviewed, with nothing reporting an error. The operation now sends `requireApproval`, which queues the output for a person whatever the rules conclude; the rules still run and their verdict is still recorded. `Action Name` and `Action Summary` are now required within that choice, since an approval request with neither gave the reviewer nothing to judge. Requires the Tracira API change that accepts `requireApproval` on `POST /api/logs`; against an older API the field is ignored and the previous behaviour applies. Only affects steps set to *Wait for a Human to Approve*.

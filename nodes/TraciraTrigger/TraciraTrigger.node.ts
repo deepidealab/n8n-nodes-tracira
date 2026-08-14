@@ -10,6 +10,10 @@ import type {
 import { NodeApiError, NodeConnectionTypes } from 'n8n-workflow';
 import { traciraApiRequest } from '../Tracira/shared/transport';
 
+// Suppressed here rather than in eslint.config.mjs because n8n-node lint runs in
+// strict mode: editing that file fails the lint outright and drops the package's
+// cloud support. See the note on the description below for why the property is gone.
+// eslint-disable-next-line @n8n/community-nodes/node-usable-as-tool -- buggy on trigger nodes
 export class TraciraTrigger implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Tracira Trigger',
@@ -20,10 +24,11 @@ export class TraciraTrigger implements INodeType {
 		subtitle: 'Watch decisions',
 		description:
 			'Starts the workflow the moment an output gets a verdict or a human decision in Tracira',
-		// A webhook trigger is never actually invoked as an AI-agent tool, but the
-		// scanner lints with `allowInlineConfig: false`, so the rule cannot be
-		// suppressed by a comment and the type only permits `true`.
-		usableAsTool: true,
+		// No `usableAsTool` here on purpose. A webhook trigger cannot be invoked as
+		// an AI-agent tool, and declaring it pollutes n8n's tool picker. It was set
+		// only to satisfy a scanner rule that fired on trigger nodes by mistake;
+		// n8n confirmed that lint was buggy and asked for its removal when they
+		// reviewed 0.16.0. Do not add it back to quiet a linter.
 		codex: {
 			categories: ['Analytics'],
 			resources: {

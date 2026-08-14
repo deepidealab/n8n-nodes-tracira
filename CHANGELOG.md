@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.16.1] - 2026-08-14
+
+### Fixed
+- Removed `usableAsTool` from the **Tracira Trigger** node. A webhook trigger can never be invoked as an AI-agent tool, and declaring it there pollutes n8n's tool picker. Reported by n8n's review of 0.16.0. No behaviour change: the Tracira action node keeps `usableAsTool` and is still available to AI agents.
+
+### Changed
+- Bumped `@n8n/node-cli` to 0.43.4 and `@n8n/scan-community-package` to 0.32.0 (dev dependencies). The property was originally set only to satisfy a lint rule that fired on trigger nodes by mistake; the current verification scanner no longer requires it. `@n8n/node-cli`'s bundled copy of the rule still does, so it is suppressed with a single inline directive rather than by editing `eslint.config.mjs`, which runs in strict mode and would cost the package its cloud support.
+
 ## [0.16.0] - 2026-08-14
 
 ### Fixed
