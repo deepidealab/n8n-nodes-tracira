@@ -50,6 +50,11 @@ const flagDisplay = {
 	operation: ['flag'],
 };
 
+const updateDisplay = {
+	resource: ['log'],
+	operation: ['update'],
+};
+
 const uploadDisplay = {
 	resource: ['log'],
 	operation: ['upload'],
@@ -247,11 +252,18 @@ export class Tracira implements INodeType {
 							'Approve or reject an output, edit it, or record that a human took over',
 					},
 					{
+						name: 'Update an Output',
+						value: 'update',
+						action: 'Update an output',
+						description:
+							'Change the details around an output already in Tracira: its metadata, its Session/Subject/Actor IDs, and the label on each attached file. The output, verdict and decision are never changed.',
+					},
+					{
 						name: 'Upload a File',
 						value: 'upload',
 						action: 'Upload a file',
 						description:
-							'Upload a large file directly to Tracira storage, then attach it to an output by key',
+							'Upload a large file directly to Tracira storage, then attach it to an output by key. Name the file on that attachment, not here: an upload does not belong to an output yet.',
 					},
 				],
 				default: 'log',
@@ -587,6 +599,151 @@ export class Tracira implements INodeType {
 					'Who asked for the review. The reviewer reads this next to the reason, so pick the one that is true: telling a manager an end-user reported an issue when the workflow made the call is misleading.',
 			},
 			{
+				displayName: 'Output ID',
+				name: 'updateLogId',
+				type: 'string',
+				required: true,
+				default: '',
+				displayOptions: {
+					show: updateDisplay,
+				},
+				description: 'The output to update. Map the Output ID from Send an Output, or from the Decision trigger.',
+			},
+			{
+				displayName: 'Metadata',
+				name: 'updateMetadata',
+				type: 'fixedCollection',
+				typeOptions: {
+					multipleValues: true,
+				},
+				placeholder: 'Add Metadata',
+				default: {},
+				displayOptions: {
+					show: updateDisplay,
+				},
+				description:
+					'Details you only learned after the output was sent: a ticket number your CRM assigned, a category a later step decided, the outcome of the call. Only the keys listed here change; everything else stays.',
+				options: [
+					{
+						name: 'entry',
+						displayName: 'Entry',
+						values: [
+							{
+								displayName: 'Key',
+								name: 'key',
+								type: 'string',
+								default: '',
+							},
+							{
+								displayName: 'Value',
+								name: 'value',
+								type: 'string',
+								default: '',
+								description: 'Leave empty to remove this key from the output',
+							},
+						],
+					},
+				],
+			},
+			{
+				displayName: 'Existing Metadata',
+				name: 'metadataMode',
+				type: 'options',
+				default: 'merge',
+				displayOptions: {
+					show: updateDisplay,
+				},
+				options: [
+					{
+						name: 'Keep It and Add These',
+						value: 'merge',
+						description: 'Only the keys listed above change; every other key already stored stays',
+					},
+					{
+						name: 'Replace It With These',
+						value: 'replace',
+						description:
+							'The keys listed above become the only metadata on the output. With no keys listed, all metadata is cleared.',
+					},
+				],
+				description: 'What happens to metadata already stored on the output',
+			},
+			{
+				displayName: 'File Labels',
+				name: 'fileLabels',
+				type: 'fixedCollection',
+				typeOptions: {
+					multipleValues: true,
+				},
+				placeholder: 'Add File Label',
+				default: {},
+				displayOptions: {
+					show: updateDisplay,
+				},
+				description:
+					'Say what each file on this output is, so a reviewer looking at three photos knows which is which. Only renames files already on the output: to add one, use Send an Output.',
+				options: [
+					{
+						name: 'file',
+						displayName: 'File',
+						values: [
+							{
+								displayName: 'File Key',
+								name: 'key',
+								type: 'string',
+								default: '',
+								description:
+									'The File Key (or File URL) of a file already on this output. Take it from an attachment on the Decision trigger, Get an Output, or Download a File.',
+							},
+							{
+								displayName: 'Label',
+								name: 'label',
+								type: 'string',
+								default: '',
+								description:
+									'What this file is, in your own words: "Before photo", "Signed contract", "Customer ID card". Leave empty to clear the label.',
+							},
+						],
+					},
+				],
+			},
+			{
+				displayName: 'Update Fields',
+				name: 'updateFields',
+				type: 'collection',
+				placeholder: 'Add Field',
+				default: {},
+				displayOptions: {
+					show: updateDisplay,
+				},
+				options: [
+					{
+						displayName: 'Actor ID',
+						name: 'actorId',
+						type: 'string',
+						default: '',
+						description:
+							'Fill in who triggered the execution, if it was not known when the output was sent',
+					},
+					{
+						displayName: 'Session ID',
+						name: 'sessionId',
+						type: 'string',
+						default: '',
+						description:
+							'Fill in the conversation or thread this output belongs to, if it was not known when the output was sent',
+					},
+					{
+						displayName: 'Subject ID',
+						name: 'subjectId',
+						type: 'string',
+						default: '',
+						description:
+							'Fill in the customer, ticket, account or record this output is about, if it was not known when the output was sent',
+					},
+				],
+			},
+			{
 				displayName: 'Input Binary Field',
 				name: 'binaryPropertyName',
 				type: 'string',
@@ -784,6 +941,14 @@ export class Tracira implements INodeType {
 									'The file is sent inline with this request. The whole request is limited to 4.5 MB, so keep inline files under ~3 MB. For larger files, use the Upload a File operation first, then attach with source "Tracira Upload".',
 							},
 							{
+								displayName: 'Label',
+								name: 'label',
+								type: 'string',
+								default: '',
+								description:
+									'Optional. What this file is, in your own words: "Before photo", "Signed contract", "Customer ID card". Worth filling in whenever an output carries more than one file, so the reviewer and your later steps can tell them apart without reading file names. It comes back on the trigger\'s attachments. Set it here whichever source you picked: the Upload a File operation has no output to name the file against. With source "Already in Tracira" the label carries over from the output the file came from, so fill it in only to change it.',
+							},
+							{
 								displayName: 'Source',
 								name: 'source',
 								type: 'options',
@@ -897,6 +1062,14 @@ export class Tracira implements INodeType {
 								hint: 'The name of the input field containing the binary file to attach',
 								description:
 									'The file is sent inline with this request. The whole request is limited to 4.5 MB, so keep inline files under ~3 MB. For larger files, use the Upload a File operation first, then attach with source "Tracira Upload".',
+							},
+							{
+								displayName: 'Label',
+								name: 'label',
+								type: 'string',
+								default: '',
+								description:
+									'Optional. What this file is, in your own words: "Before photo", "Signed contract", "Customer ID card". Worth filling in whenever an output carries more than one file, so the reviewer and your later steps can tell them apart without reading file names. It comes back on the trigger\'s attachments. Set it here whichever source you picked: the Upload a File operation has no output to name the file against. With source "Already in Tracira" the label carries over from the output the file came from, so fill it in only to change it.',
 							},
 							{
 								displayName: 'Source',
@@ -1492,6 +1665,7 @@ export class Tracira implements INodeType {
 										source: 'upload',
 										data: buffer.toString('base64'),
 										filename: (row.filename as string) || binary.fileName || 'file',
+										label: row.label as string | undefined,
 									}),
 								);
 								continue;
@@ -1502,6 +1676,7 @@ export class Tracira implements INodeType {
 								key: row.key as string | undefined,
 								url: row.url as string | undefined,
 								filename: row.filename as string | undefined,
+								label: row.label as string | undefined,
 							});
 
 							if (entry.key !== undefined || entry.url !== undefined) {
@@ -1675,6 +1850,63 @@ export class Tracira implements INodeType {
 							status: 'flagged',
 							reason,
 							flaggedBy,
+						}),
+					};
+				} else if (resource === 'log' && operation === 'update') {
+					const logId = this.getNodeParameter('updateLogId', itemIndex) as string;
+					const updateFields = this.getNodeParameter('updateFields', itemIndex, {}) as IDataObject;
+					const metadataMode = this.getNodeParameter('metadataMode', itemIndex, 'merge') as string;
+
+					const metadataRows = ((this.getNodeParameter('updateMetadata', itemIndex, {}) as IDataObject)
+						.entry ?? []) as Array<{ key?: string; value?: string }>;
+					// An empty value removes the key, the same way Tracira drops an empty
+					// value at ingest, so a row mapped from a sometimes-blank field means
+					// "no value" rather than two different things.
+					let metadata: IDataObject | undefined;
+					for (const { key, value } of metadataRows) {
+						if (!key) continue;
+						metadata = metadata ?? {};
+						metadata[key] = value ?? '';
+					}
+					// Replace with no rows is how you clear every key, so the empty object
+					// has to be sent rather than stripped.
+					if (metadataMode === 'replace') metadata = metadata ?? {};
+
+					const labelRows = ((this.getNodeParameter('fileLabels', itemIndex, {}) as IDataObject)
+						.file ?? []) as Array<{ key?: string; label?: string }>;
+					const attachments: IDataObject[] = [];
+					for (const row of labelRows) {
+						const key = (row.key ?? '').trim();
+						if (!key) continue;
+						// label is sent even when empty: that is how a label is cleared.
+						attachments.push({ key, label: row.label ?? '' });
+					}
+
+					if (
+						metadata === undefined &&
+						attachments.length === 0 &&
+						!updateFields.sessionId &&
+						!updateFields.subjectId &&
+						!updateFields.actorId
+					) {
+						throw new NodeOperationError(
+							this.getNode(),
+							'Nothing to update. Add a metadata row, a file label, or one of the Session / Subject / Actor IDs under Update Fields.',
+							{ itemIndex },
+						);
+					}
+
+					requestOptions = {
+						method: 'PATCH',
+						url: `${baseUrl}/logs/${encodeURIComponent(logId)}`,
+						body: stripEmpty({
+							metadata,
+							// The API rejects a mode with no metadata to apply it to.
+							metadataMode: metadata === undefined ? undefined : metadataMode,
+							attachments: attachments.length ? attachments : undefined,
+							actorId: updateFields.actorId as string | undefined,
+							sessionId: updateFields.sessionId as string | undefined,
+							subjectId: updateFields.subjectId as string | undefined,
 						}),
 					};
 				} else if (resource === 'log' && operation === 'upload') {

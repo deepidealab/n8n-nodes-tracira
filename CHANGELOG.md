@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.18.0] - 2026-08-24
+
+### Added
+- `Update an Output` operation (`PATCH /api/logs/{id}`): edits the details around an output already in Tracira. `Metadata` rows merge into what is stored - only the keys you list change, and a row with an empty value removes that key - with `Existing Metadata` switching to *Replace It With These* when the listed keys should be the only ones left. `File Labels` renames a file already on the output. `Update Fields` backfills a `Session ID`, `Subject ID` or `Actor ID` that was not known when the output was sent.
+- `Label` field on `Input Attachments` and `Output Attachments`: says what a file is ("Before photo", "Signed contract"), so an output carrying several files can be read without guessing from file names.
+- **Tracira Trigger** `attachments` entries now carry `label` alongside `key` and `url`, so a workflow can pick the file it needs by what it is rather than by file name. The label is set on the attachment in `Send an Output` (not on `Upload a File`, which has no output to name the file against), and an `Already in Tracira` re-attach inherits it from the output the file came from.
+
+The output itself, its verdict and the human decision remain immutable, and changing metadata does not re-run the rules: the verdict belongs to the output that was judged. Requires the Tracira API changes that add `PATCH /api/logs/{id}` and accept `label` on attachments. Against an older API the update operation returns 404 and labels are ignored; every other operation is unaffected.
+
 ## [0.17.0] - 2026-08-14
 
 ### Added
