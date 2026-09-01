@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.19.0] - 2026-09-01
+
+### Added
+- **Metadata (JSON)** field on `Update an Output`, matching the one `Send an Output` already had. Stores a whole JSON object alongside the key-value rows, for values that are themselves structured. Sent as `metadataJson`; a row wins when both name the same key.
+- `Download a File` now returns `fileSize`, which `/media-url` had been returning all along.
+
+### Changed
+- The **Value** help on `Update an Output`'s metadata rows no longer says an empty value removes the key. The API now skips an empty value, exactly as it does on ingest, so a row mapped from a sometimes-blank field cannot destroy stored data. Deleting is done with **Remove Metadata Keys**.
+
+Requires the matching Tracira API change (`metadataJson` on POST /api/logs and PATCH /api/logs/{id}). Against an older API the JSON field is ignored and an empty metadata value still deletes the key; every other operation is unaffected.
+
 ## [0.18.0] - 2026-08-24
 
 ### Added

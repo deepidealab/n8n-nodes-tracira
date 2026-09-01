@@ -639,11 +639,35 @@ export class Tracira implements INodeType {
 								name: 'value',
 								type: 'string',
 								default: '',
-								description: 'Leave empty to remove this key from the output',
+								description:
+									'Leave empty and this row is skipped: an empty value means the field had nothing in it, not that the key should go. To delete a key, name it under Remove Metadata Keys.',
 							},
 						],
 					},
 				],
+			},
+			{
+				displayName: 'Metadata (JSON)',
+				name: 'updateMetadataJson',
+				type: 'json',
+				default: '',
+				displayOptions: {
+					show: updateDisplay,
+				},
+				description:
+					'Optional. A whole JSON object stored alongside the Metadata rows above, for values that are themselves structured: an invoice with its line items, a scoring breakdown, an address. The rows can only hold plain text. If a key appears in both, the row wins.',
+			},
+			{
+				displayName: 'Remove Metadata Keys',
+				name: 'metadataRemove',
+				type: 'string',
+				default: '',
+				displayOptions: {
+					show: updateDisplay,
+				},
+				placeholder: 'crm_stage, priority',
+				description:
+					'Comma-separated names of metadata keys to delete from this output. Use this rather than an empty value: it says delete unambiguously. A name that is not on the output is ignored.',
 			},
 			{
 				displayName: 'Existing Metadata',
@@ -1872,6 +1896,23 @@ export class Tracira implements INodeType {
 					// has to be sent rather than stripped.
 					if (metadataMode === 'replace') metadata = metadata ?? {};
 
+					const metadataJsonRaw = this.getNodeParameter('updateMetadataJson', itemIndex, '') as string;
+					let metadataJson: IDataObject | undefined;
+					if (metadataJsonRaw && metadataJsonRaw.trim()) {
+						try {
+							metadataJson = JSON.parse(metadataJsonRaw) as IDataObject;
+						} catch {
+							throw new NodeOperationError(this.getNode(), 'Metadata (JSON) must be valid JSON', {
+								itemIndex,
+							});
+						}
+					}
+
+					const metadataRemove = (this.getNodeParameter('metadataRemove', itemIndex, '') as string)
+						.split(',')
+						.map((key) => key.trim())
+						.filter((key) => key.length > 0);
+
 					const labelRows = ((this.getNodeParameter('fileLabels', itemIndex, {}) as IDataObject)
 						.file ?? []) as Array<{ key?: string; label?: string }>;
 					const attachments: IDataObject[] = [];
@@ -1884,6 +1925,8 @@ export class Tracira implements INodeType {
 
 					if (
 						metadata === undefined &&
+						metadataJson === undefined &&
+						metadataRemove.length === 0 &&
 						attachments.length === 0 &&
 						!updateFields.sessionId &&
 						!updateFields.subjectId &&
@@ -1891,7 +1934,7 @@ export class Tracira implements INodeType {
 					) {
 						throw new NodeOperationError(
 							this.getNode(),
-							'Nothing to update. Add a metadata row, a file label, or one of the Session / Subject / Actor IDs under Update Fields.',
+							'Nothing to update. Add a metadata row, a key to remove, a file label, or one of the Session / Subject / Actor IDs under Update Fields.',
 							{ itemIndex },
 						);
 					}
@@ -1902,7 +1945,12 @@ export class Tracira implements INodeType {
 						body: stripEmpty({
 							metadata,
 							// The API rejects a mode with no metadata to apply it to.
-							metadataMode: metadata === undefined ? undefined : metadataMode,
+							metadataJson,
+							// The mode governs the merged metadata, so it travels whenever either
+							// half of it does.
+							metadataMode:
+								metadata === undefined && metadataJson === undefined ? undefined : metadataMode,
+							metadataRemove: metadataRemove.length ? metadataRemove : undefined,
 							attachments: attachments.length ? attachments : undefined,
 							actorId: updateFields.actorId as string | undefined,
 							sessionId: updateFields.sessionId as string | undefined,
@@ -2036,6 +2084,7 @@ export class Tracira implements INodeType {
 							key: signed.key ?? source,
 							filename,
 							contentType: signed.contentType,
+							fileSize: signed.sizeBytes,
 						},
 						binary: { [binaryPropertyName]: binaryData },
 						pairedItem: itemIndex,
