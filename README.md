@@ -87,12 +87,12 @@ The Tracira Make custom app (`make-app/` in the main repo) is the reference inte
 
 Use the `Tracira API` credential.
 
-You need a workspace webhook token from your Tracira dashboard:
+You need your workspace's API token:
 
 1. Open Tracira.
-2. Go to the integrations/token area of your workspace.
-3. Copy the webhook token.
-4. Paste it into the `Workspace Token` field in n8n.
+2. Go to the **Integrations** page of your workspace.
+3. Copy the API token.
+4. Paste it into the `API Token` field in n8n.
 
 The credential test calls `GET /api/verify` on Tracira and sends the token as an `Authorization: Bearer <token>` header.
 

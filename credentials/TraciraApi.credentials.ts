@@ -17,13 +17,13 @@ export class TraciraApi implements ICredentialType {
 
 	properties: INodeProperties[] = [
 		{
-			displayName: 'Workspace Token',
+			displayName: 'API Token',
 			name: 'webhookToken',
 			type: 'string',
 			typeOptions: { password: true },
 			required: true,
 			default: '',
-			description: 'The webhook token from your Tracira workspace',
+			description: 'The API token from the Integrations page of your Tracira workspace',
 		},
 	];
 
