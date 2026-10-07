@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.20.1] - 2026-10-08
+
+### Changed
+- Docs only: `Withdraw a Suggested Change` now documents the `removed` field. The Tracira API answers an already-settled suggestion with `200` and `removed: false` (plus `code: NOT_FOUND`) instead of `404`, so an IF node on `removed` is the way to branch. The node passes either response through unchanged, so 0.20.0 keeps working.
+
 ## [0.20.0] - 2026-10-07
 
 ### Added

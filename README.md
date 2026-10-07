@@ -69,7 +69,7 @@ The node supports the `Instruction` resource for hosting the AI's instructions (
 - `Get Instructions`: Fetch the active AI instructions for a project and task. On the very first run for that project/task, the text in the optional `Starter Instructions` field is saved as version 1 and returned; after that the version stored in Tracira always wins and `Starter Instructions` is ignored. The returned `Version` can be passed to `Send an Output`'s `Instructions Version` field to stamp each output with the instructions it ran under. `Project Name` and `Task Name` must match the ones used in `Send an Output` so the instructions and the outputs belong together.
 - `Update Instructions`: Save a new version of the instructions and make it active. Put the full updated text in `New Instructions` (typically the output of an AI step that rewrote the current instructions to follow reviewer feedback). Optionally record the reviewer's `Comment` (map the Comment from the Tracira Trigger, shown in the dashboard as the reason this version exists) and the `Output ID` the feedback came from (map the Output ID from the Trigger). Set `Based On Version` to the `Version` from the `Get Instructions` call the new text was written from: if the instructions changed in the meantime (a manager edited them or accepted a suggestion), nothing is saved and the node fails with `VERSION_CONFLICT` instead of overwriting the newer version. Leave it at 0 to always save.
 - `Suggest an Instructions Change`: Add feedback your workflow received outside Tracira (for example a correction typed in your own chat app) to the suggested update a manager reviews and accepts in Tracira, the same queue the dashboard's Teach the AI fills. Nothing changes until the manager accepts it. Fill `Suggested Change` (plain words, up to 2,000 characters), optionally `Suggested By` (shown on the suggestion), `Your Reference` (your own ID: sending it again replaces the suggestion) and `Output ID`. Fails with `NO_INSTRUCTIONS` when the project and task have no instructions yet. Returns `ok`, `at` and `queuedCount`.
-- `Withdraw a Suggested Change`: Remove a suggestion by its `Your Reference`, for a change that was settled in your own app (applied there or turned down) so the manager is not asked to decide it twice. Returns `ok` and `cleared`; when the suggestion is no longer waiting because a manager already accepted or dismissed it in Tracira, the node still succeeds and returns `code: NOT_FOUND`, so an IF node can skip applying it a second time.
+- `Withdraw a Suggested Change`: Remove a suggestion by its `Your Reference`, for a change that was settled in your own app (applied there or turned down) so the manager is not asked to decide it twice. Returns `ok`, `removed` and `cleared`. When the suggestion is no longer waiting because a manager already accepted or dismissed it in Tracira, the node still succeeds with `removed: false` (and `code: NOT_FOUND`), so an IF node on `removed` can skip applying it a second time.
 
 The node also supports the `API` resource with:
 
@@ -174,6 +174,10 @@ Do **not** publish manually from a local machine — provenance requires the Git
 - [Tracira API schema](https://www.tracira.com/openapi.json)
 
 ## Version history
+
+### 0.20.1
+
+- Docs: `Withdraw a Suggested Change` returns `removed`, false when the suggestion was already settled in Tracira.
 
 ### 0.20.0
 
