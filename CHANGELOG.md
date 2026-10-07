@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.20.0] - 2026-10-07
+
+### Added
+- `Suggest an Instructions Change` operation (`POST /api/instructions/feedback`): adds feedback received outside Tracira, such as a correction typed in your own chat app, to the suggested instructions update a manager reviews and accepts in Tracira. `Your Reference` makes it replaceable and withdrawable.
+- `Withdraw a Suggested Change` operation (`DELETE /api/instructions/feedback`): removes a suggestion by its reference once it was settled in your own app. A suggestion that is no longer waiting, because a manager already accepted or dismissed it in Tracira, is returned as `code: NOT_FOUND` instead of failing the node.
+- `Based On Version` on `Update Instructions` (sent as `baseVersion`): the save is refused with `VERSION_CONFLICT` when the instructions changed since that version, so a manager's edit is never silently overwritten. 0 (the default) keeps the previous always-save behaviour.
+
+Requires the matching Tracira API change (live since 2026-10-07). Every other operation is unaffected, and existing workflows keep working unchanged.
+
 ## [0.19.0] - 2026-09-01
 
 ### Added

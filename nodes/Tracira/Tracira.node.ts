@@ -84,9 +84,19 @@ const instructionsUpdateDisplay = {
 	operation: ['updateInstructions'],
 };
 
+const instructionsQueueDisplay = {
+	resource: ['instructions'],
+	operation: ['queueFeedback'],
+};
+
+const instructionsWithdrawDisplay = {
+	resource: ['instructions'],
+	operation: ['withdrawFeedback'],
+};
+
 const instructionsAnyDisplay = {
 	resource: ['instructions'],
-	operation: ['getInstructions', 'updateInstructions'],
+	operation: ['getInstructions', 'queueFeedback', 'updateInstructions', 'withdrawFeedback'],
 };
 
 function stripEmpty(data: IDataObject): IDataObject {
@@ -285,11 +295,25 @@ export class Tracira implements INodeType {
 							'Fetch the current AI instructions (system prompt) stored in Tracira for a project and task. On the very first run, saves the Starter Instructions as version 1 and returns them.',
 					},
 					{
+						name: 'Suggest an Instructions Change',
+						value: 'queueFeedback',
+						action: 'Suggest an instructions change',
+						description:
+							'Add feedback received outside Tracira (for example a correction typed in your own chat app) to the suggested update a manager reviews and accepts in Tracira',
+					},
+					{
 						name: 'Update Instructions',
 						value: 'updateInstructions',
 						action: 'Update instructions',
 						description:
 							'Save a new version of the AI instructions in Tracira and make it active. Use after a reviewer sends a draft back with feedback.',
+					},
+					{
+						name: 'Withdraw a Suggested Change',
+						value: 'withdrawFeedback',
+						action: 'Withdraw a suggested change',
+						description:
+							'Remove a change you suggested, by its reference, once it was settled in your own app. Returns code NOT_FOUND when a manager already accepted or dismissed it in Tracira.',
 					},
 				],
 				default: 'getInstructions',
@@ -405,6 +429,78 @@ export class Tracira implements INodeType {
 					show: instructionsUpdateDisplay,
 				},
 				description: 'Optional. The Tracira output the feedback came from (map the Output ID from the Tracira Trigger).',
+			},
+			{
+				displayName: 'Based On Version',
+				name: 'baseVersion',
+				type: 'number',
+				typeOptions: {
+					minValue: 0,
+				},
+				default: 0,
+				displayOptions: {
+					show: instructionsUpdateDisplay,
+				},
+				description:
+					'Optional, recommended. The Version from the Get Instructions operation your New Instructions were written from. If the instructions changed since (a manager edited them or accepted a suggestion), nothing is saved and the node fails with VERSION_CONFLICT instead of overwriting the newer version. Leave at 0 to always save.',
+			},
+			{
+				displayName: 'Suggested Change',
+				name: 'suggestedChange',
+				type: 'string',
+				required: true,
+				typeOptions: {
+					rows: 3,
+				},
+				default: '',
+				displayOptions: {
+					show: instructionsQueueDisplay,
+				},
+				description:
+					'What the AI should do differently, in plain words. A manager reviews it in Tracira and accepts it into the instructions. Up to 2,000 characters.',
+			},
+			{
+				displayName: 'Suggested By',
+				name: 'suggestedBy',
+				type: 'string',
+				default: '',
+				displayOptions: {
+					show: instructionsQueueDisplay,
+				},
+				description: "Optional. Who gave this feedback, shown on the suggestion in Tracira, for example 'Jeff (Telegram)'.",
+			},
+			{
+				displayName: 'Your Reference',
+				name: 'suggestionRef',
+				type: 'string',
+				default: '',
+				displayOptions: {
+					show: instructionsQueueDisplay,
+				},
+				description:
+					'Optional. Your own ID for this suggestion. Sending the same reference again replaces the suggestion instead of adding a second one, and Withdraw a Suggested Change uses it.',
+			},
+			{
+				displayName: 'Output ID',
+				name: 'suggestionLogId',
+				type: 'string',
+				default: '',
+				displayOptions: {
+					show: instructionsQueueDisplay,
+				},
+				description: 'Optional. The Tracira output this feedback is about, so the manager can open it from the suggestion.',
+			},
+			{
+				displayName: 'Your Reference',
+				name: 'withdrawRef',
+				type: 'string',
+				required: true,
+				default: '',
+				displayOptions: {
+					show: instructionsWithdrawDisplay,
+				},
+				description:
+					'The Your Reference value sent with Suggest an Instructions Change. If a manager already accepted or dismissed the suggestion in Tracira, the node still succeeds and returns code NOT_FOUND.',
 			},
 			{
 				displayName: 'Operation',
@@ -1785,7 +1881,43 @@ export class Tracira implements INodeType {
 							content: this.getNodeParameter('newInstructions', itemIndex) as string,
 							teachComment: this.getNodeParameter('teachComment', itemIndex, '') as string,
 							logId: this.getNodeParameter('instructionsLogId', itemIndex, '') as string,
+							baseVersion: (this.getNodeParameter('baseVersion', itemIndex, 0) as number) || undefined,
 						}),
+					};
+				} else if (resource === 'instructions' && operation === 'queueFeedback') {
+					requestOptions = {
+						method: 'POST',
+						url: `${baseUrl}/instructions/feedback`,
+						body: stripEmpty({
+							project: this.getNodeParameter('instructionsProject', itemIndex, '', {
+								extractValue: true,
+							}) as string,
+							task: this.getNodeParameter('instructionsTask', itemIndex, '', {
+								extractValue: true,
+							}) as string,
+							comment: this.getNodeParameter('suggestedChange', itemIndex) as string,
+							author: this.getNodeParameter('suggestedBy', itemIndex, '') as string,
+							ref: this.getNodeParameter('suggestionRef', itemIndex, '') as string,
+							logId: this.getNodeParameter('suggestionLogId', itemIndex, '') as string,
+						}),
+					};
+				} else if (resource === 'instructions' && operation === 'withdrawFeedback') {
+					requestOptions = {
+						method: 'DELETE',
+						url: `${baseUrl}/instructions/feedback`,
+						body: stripEmpty({
+							project: this.getNodeParameter('instructionsProject', itemIndex, '', {
+								extractValue: true,
+							}) as string,
+							task: this.getNodeParameter('instructionsTask', itemIndex, '', {
+								extractValue: true,
+							}) as string,
+							ref: this.getNodeParameter('withdrawRef', itemIndex) as string,
+						}),
+						// A note that is no longer queued (404 NOT_FOUND) is an answer, not a
+						// failure: the manager settled it in Tracira. Read the status ourselves.
+						returnFullResponse: true,
+						ignoreHttpStatusErrors: true,
 					};
 				} else if (resource === 'log' && operation === 'get') {
 					const logId = this.getNodeParameter('logId', itemIndex) as string;
@@ -2125,7 +2257,20 @@ export class Tracira implements INodeType {
 					requestOptions,
 				);
 
-				if (resource === 'log' && operation === 'search' && Array.isArray(response?.executions)) {
+				if (resource === 'instructions' && operation === 'withdrawFeedback') {
+					const { statusCode, body } = response as IN8nHttpFullResponse;
+					const result = (body ?? {}) as IDataObject;
+					if (statusCode >= 400 && !(statusCode === 404 && result.code === 'NOT_FOUND')) {
+						throw new NodeApiError(this.getNode(), result as JsonObject, {
+							httpCode: String(statusCode),
+							itemIndex,
+						});
+					}
+					returnData.push({
+						json: result,
+						pairedItem: itemIndex,
+					});
+				} else if (resource === 'log' && operation === 'search' && Array.isArray(response?.executions)) {
 					for (const log of response.executions) {
 						returnData.push({
 							json: log as IDataObject,
@@ -2156,7 +2301,7 @@ export class Tracira implements INodeType {
 
 				// Validation errors are already NodeOperationError; wrap everything else
 				// (HTTP failures) in NodeApiError to keep status code and response body.
-				throw error instanceof NodeOperationError
+				throw error instanceof NodeOperationError || error instanceof NodeApiError
 					? error
 					: new NodeApiError(this.getNode(), error as JsonObject, { itemIndex });
 			}
