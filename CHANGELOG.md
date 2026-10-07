@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.21.0] - 2026-10-08
+
+### Added
+- `Actor Name` option on `Send an Output` and in `Update Fields` on `Update an Output` (sent as `actorName`): the readable name of the person behind an output, for example "Jeff Miller". Tracira shows it on conversations instead of the Actor ID and matches it in search and the actor filter.
+
+Requires the matching Tracira API change (live since 2026-10-08). Against an older API the name is ignored; every other operation is unaffected.
+
 ## [0.20.1] - 2026-10-08
 
 ### Changed

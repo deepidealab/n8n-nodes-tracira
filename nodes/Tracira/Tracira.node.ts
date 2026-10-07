@@ -846,6 +846,13 @@ export class Tracira implements INodeType {
 							'Fill in who triggered the execution, if it was not known when the output was sent',
 					},
 					{
+						displayName: 'Actor Name',
+						name: 'actorName',
+						type: 'string',
+						default: '',
+						description: "Fill in the actor's readable name (for example 'Jeff Miller'), shown and searched in Tracira instead of the ID",
+					},
+					{
 						displayName: 'Session ID',
 						name: 'sessionId',
 						type: 'string',
@@ -1361,6 +1368,14 @@ export class Tracira implements INodeType {
 						default: '',
 					},
 					{
+						displayName: 'Actor Name',
+						name: 'actorName',
+						type: 'string',
+						default: '',
+						description:
+							"Readable name of the person (for example 'Jeff Miller' or '@jeff'). Tracira shows it on conversations and lets you search by it instead of the Actor ID.",
+					},
+					{
 						displayName: 'Confidence',
 						name: 'confidence',
 						type: 'number',
@@ -1827,6 +1842,7 @@ export class Tracira implements INodeType {
 							outputAttachments: outputAttachments.length ? outputAttachments : undefined,
 							action,
 							actorId: options.actorId as string | undefined,
+							actorName: options.actorName as string | undefined,
 							callbackUrl:
 								mode === 'approval'
 									? (this.getNodeParameter('callbackUrl', itemIndex, '') as string) || undefined
@@ -2062,11 +2078,12 @@ export class Tracira implements INodeType {
 						attachments.length === 0 &&
 						!updateFields.sessionId &&
 						!updateFields.subjectId &&
-						!updateFields.actorId
+						!updateFields.actorId &&
+						!updateFields.actorName
 					) {
 						throw new NodeOperationError(
 							this.getNode(),
-							'Nothing to update. Add a metadata row, a key to remove, a file label, or one of the Session / Subject / Actor IDs under Update Fields.',
+							'Nothing to update. Add a metadata row, a key to remove, a file label, or one of the Session / Subject / Actor IDs or the Actor Name under Update Fields.',
 							{ itemIndex },
 						);
 					}
@@ -2085,6 +2102,7 @@ export class Tracira implements INodeType {
 							metadataRemove: metadataRemove.length ? metadataRemove : undefined,
 							attachments: attachments.length ? attachments : undefined,
 							actorId: updateFields.actorId as string | undefined,
+							actorName: updateFields.actorName as string | undefined,
 							sessionId: updateFields.sessionId as string | undefined,
 							subjectId: updateFields.subjectId as string | undefined,
 						}),
